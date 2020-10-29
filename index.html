@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Gesign</title>
+
+		<link rel="stylesheet" href="styles.css" type="text/css" media="screen" title="no title" charset="utf-8">
+		<!--Depdency for tui editor-->
+		<link rel="stylesheet" href="node_modules/codemirror/lib/codemirror.css"/>
+		<link rel="stylesheet" href="node_modules/@toast-ui/editor/dist/toastui-editor.css"/>
+	</head>
+	<body>
+		<div id="screen" class="flex w-full h-full">
+			<div id="sideNav" class="sidenav flex flex-col w-256 bg-gray-200">
+				<div id="appMenu" class="appmenu flex flex-col w-full">
+					<button class="">This is a button</button>
+				</div>
+				<div id="menuContents" class="flex flex-col">
+
+				</div>
+			</div>
+			<div id="main" class="flex flex-col bg-red-200 h-full w-full" >
+				<div id="openedTab" class="h-36 bg-blue-200 flex" style="height: 3%; min-height: 30px">
+					<button class="tab">TABS</button>
+				</div>
+				<div id="stausBar" class="h-36 bg-green-200 flex" style="height: 3%; min-height: 30px">
+					<div class="tab">Status Bars</div>
+				</div>
+				<div id="viewer" style="height: 85%;">
+					<div id="editor"></div>
+				</div>
+				<div id="testFiles" class="flex p-4">
+					<button id="openFileBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">OpenFile</button>
+					<button id="saveFileBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">SaveFile</button>
+					<button id="openDirBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">OpenDirectory</button>
+				</div>
+			</div>
+		</div>
+
+		<!--<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>-->
+		<script charset="utf-8" src="index.js"></script>
+	</body>
+</html>

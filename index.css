@@ -1,0 +1,14 @@
+/*My Css*/
+
+html, body {
+	height: 100%;
+}
+
+/*Tailwind specfic */
+
+@tailwind base;
+
+@tailwind components;
+
+@tailwind utilities;
+
