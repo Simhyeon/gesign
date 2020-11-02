@@ -1,0 +1,41 @@
+1. First check if nodeGraph tree is properly made
+-> Graph node is added but references is not proplery set.
+-> Now it is registering references
+-> Level and parentlist is not proplery set ffs.
+-> Becuase I was not adding newly created child node into the map
+-> Also I didn't updated existing targetNode's refernces to updated.
+
+2. Second check if order is getting sorted properly
+-> Checked
+
+3. Thirdly check if complex nodeGraph can be made
+-> Currently childrenLIst is strange and childrenList is treated as Array... what? 
+-> I was setting referecnes directly and didn't find out because I was search only this.variableName
+-> What a stupid mistake
+
+4. Check if status is proplery updated
+-> Not currently set
+-> Reasoning is because level is not set properly 
+	-> This is becuase not newly created node is not setting children's level as something other than original.
+	-> To fix this and proplery address duplicate level, 
+	-> In case targetNode is not newly created and there is at least one existing node, recurisvely increase targetNode's ancestor's level by 1.
+	-> + If newly created child exists then set children's level as targetNode's level + 1 after the recurisve incrementation.
+	-> + It should check mutual references or it would cause infinite loop and crash, or if not worse cause stack overflow exception.
+	-> CHECK ::: Ok, this looks ok for now.
+
+-> Dependency check should care about both timestamp and file status
+
+5. Implement prevention of mutual references
+
+6. Check if mutual references prevention is proplery executed.
+
+### Another note
+
+0. Make ergonomic procedure and button interaction for dependencies check.
+	-> Dependency check should be done when all files are saved (wihout unsaved tabs).
+	-> Reading sysroot calls dependencies check before user interaction.
+
+1. Implement file watch feature.
+	-> Should work as reload whole sysroot files
+	-> Display Current status of opened tab as somewhat like (deleted or renamed?)
+

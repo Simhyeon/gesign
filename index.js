@@ -4,6 +4,9 @@ const path = require('path');
 const fs = require('fs');
 const yaml = require('js-yaml');
 const Editor = require('@toast-ui/editor');
+const Checker = require('./checker').Checker;
+
+let checker = new Checker();
 
 // COMMENTS
 // IMPORTANT NOTE !!! 
@@ -11,6 +14,8 @@ const Editor = require('@toast-ui/editor');
 
 // VARAIBLE ::: Root direoctry given by user as a root for recursive file detection.
 let rootDirectory;
+// VARIABLE ::: Total list of gdml files
+let totalGdmlList = new Array();
 
 // VARAIBLE ::: Array that stores object of following properties
 // {path: string, content: string(yaml), screen: domElement, editor: ToastEditorInstance}
@@ -24,8 +29,28 @@ let currentTabIndex = -1;
 const tabMenu = document.querySelector("#openedTabs");
 const sideMenu = document.querySelector('#menuContents');
 const mainDiv = document.querySelector("#main");
+const statusDiv = document.querySelector("#statusBar");
 const editorScreen = document.querySelector("#editorScreen");
 editorScreen.style.display = "none";
+
+// EVENT || DEBUG ::: Make Checker object and add all gdml document sto graph node
+document.querySelector("#checker").addEventListener('click', () => {
+	totalGdmlList.forEach((path) => {
+		let gdml = loadGdml(path);
+		if (gdml == null) {
+			console.error("GDML IS null;");
+			return;
+		}
+		checker.addNode(path, gdml["reference"]);
+	})
+
+	//checker.debugPrintAll();
+	let sortesList = checker.getLevelSortedList();
+	console.log(sortesList);
+	checker.checkDependencies(sortesList);
+	console.log("After dependency check");
+	console.log(sortesList);
+});
 
 // EVENT ::: Save markdown of tabObject into the file which path is associated with tabObject.
 document.querySelector('#saveFileBtn').addEventListener('click', () => {
@@ -84,6 +109,8 @@ function listFile(root, fileName, parentElement) {
 	elem.dataset.path = fullPath;
 	elem.addEventListener('click', loadGdmlToEditor);
 	parentElement.appendChild(elem);
+	// Add value to array(list) so that dependency checker can do his job.
+	totalGdmlList.push(fullPath);
 }
 
 // FUNCTION ::: Create directory menu button
@@ -107,6 +134,18 @@ function listDirectory(root, dirName, parentElement) {
 	});
 }
 
+function loadGdml(filePath) {
+	// If given file is not gdml then return
+	if (path.extname(filePath).toLowerCase() !== ".gdml") return null;
+	try {
+		var result = fs.readFileSync(filePath);
+		return yaml.load(result);
+	} catch {
+		console.log("No file found");
+		return null;
+	}
+}
+
 // FUNCTION ::: Load Gdml file contents from file and paste into the 
 // newly instantiated toastui editor if not existent.
 // This function is called when sideMenu button or tab button is clicked.
@@ -125,6 +164,8 @@ function loadGdmlToEditor(event) {
 		currentTabIndex = tabIndex;
 		// And show selected tab
 		tabObjects[currentTabIndex].screen.style.display = "";
+		// Update Status Bar
+		statusGrphics(tabObjects[currentTabIndex].content["status"]);
 		return;
 	}
 
@@ -155,6 +196,7 @@ function loadGdmlToEditor(event) {
 		tabObjects.push(tabObject);
 
 		editorInstance.setMarkdown(tabObject.content["body"], false);
+		statusGrphics(tabObjects[currentTabIndex].content["status"]);
 		// TODO ::: NOT YET READY
 		addNewTab(filePath);
 	});
@@ -174,7 +216,7 @@ function isTabPresent(filePath) {
 function addNewTab(filePath) {
 	// TODO ::: Add dom element
 	let btnElem = document.createElement('button');
-	btnElem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", "bg-blue-500", "m-2");
+	btnElem.classList.add("rounded", "font-bold", "text-white", "bg-blue-500", "text-center", "px-2", "mx-2");
 	tabMenu.appendChild(btnElem);
 	btnElem.dataset.path = filePath;
 	btnElem.textContent = path.basename(filePath);
@@ -208,4 +250,18 @@ function initEditor(newId, element) {
 	editor.getHtml();
 
 	return editor;
+}
+
+// FUNCTION ::: Apply Status graphical effect
+function statusGrphics(statusString) {
+	if( statusString === "UPTODATE" ) {
+		statusDiv.textContent = "Up to date";
+		statusDiv.classList.add("bg-blue-200");
+	} else if (statusString === "OUTDATED") {
+		statusDiv.textContent = "Outdated";
+		statusDiv.classList.add("bg-red-200");
+	} else if (statusString === "INDEFINITE") {
+		statusDiv.textContent = "Indefinte";
+		statusDiv.classList.add("bg-gray-200");
+	}
 }

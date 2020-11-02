@@ -1,7 +1,6 @@
 status: UPTODATE
-relationships:
-  Parent: null
-  Reference: null
+reference: 
+  []
 body: |-
   ### Test header
   <br>

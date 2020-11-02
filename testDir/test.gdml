@@ -1,7 +1,9 @@
 status: UPTODATE
-relationships:
-  Parent: null
-  Reference: null
+reference: 
+  - /home/simon/programming/js/gesign/testDir/test_bak.gdml
+  - /home/simon/programming/js/gesign/testDir/subDir/test.gdml
+confirmed_by:
+  Simon creek, Nov 3rd
 body: |-
   ### Test header
   <br>
