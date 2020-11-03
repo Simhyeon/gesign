@@ -1,5 +1,4 @@
-status: UPTODATE
-reference: 
+status: OUTDATED
+reference:
   - /home/simon/programming/js/gesign/testDir/subDir/test.gdml
-body:
-  "### Test header With new changes"
+body: '### Test header With new changes'

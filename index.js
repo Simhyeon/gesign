@@ -1,3 +1,5 @@
+'use strict';
+
 /// HEADER
 const { remote } = require('electron');
 const path = require('path');
@@ -5,7 +7,9 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 const Editor = require('@toast-ui/editor');
 const Checker = require('./checker').Checker;
+const watch = require("node-watch");
 
+let watcher = null;
 let checker = new Checker();
 
 // COMMENTS
@@ -14,16 +18,29 @@ let checker = new Checker();
 
 // VARAIBLE ::: Root direoctry given by user as a root for recursive file detection.
 let rootDirectory;
-// VARIABLE ::: Total list of gdml files
+// VARAIBLE ::: Total list of gdml files's paths + dependencies
 let totalGdmlList = new Array();
 
 // VARAIBLE ::: Array that stores object of following properties
+// TODO ::: Should add current file Status
+// Like Unsaved, Deleted, Or None for default
 // {path: string, content: string(yaml), screen: domElement, editor: ToastEditorInstance}
+// TODO ::: Should be something like 
+// {status: string, manualSave: boolean, path: string, content: string(yaml), screen: domElement, tab: domElement, editor: ToastEditorInstance}
 let tabObjects = new Array(); // This is list of opened tabs's which has a data of yaml string
 
 // VARAIBLE ::: Index that points to the currentTabObject
 // when no tabs are open then tabIndex is -1
 let currentTabIndex = -1;
+
+// VARAIBLE ::: Consts values
+const OUTDATED = "OUTDATED";
+const UPTODATE = "UPTODATE";
+const UNDEFINEDCOLOR = "bg-gray-500";
+const OUTDATEDCOLOR = "bg-red-300";
+const UPTODATECOLOR = "bg-blue-300";
+const UNSAVED ="UNSAVED";
+const SAVED ="SAVED";
 
 // VARAIBLE ::: Caching of specific dom elements.
 const tabMenu = document.querySelector("#openedTabs");
@@ -35,48 +52,166 @@ editorScreen.style.display = "none";
 
 // EVENT || DEBUG ::: Make Checker object and add all gdml document sto graph node
 document.querySelector("#checker").addEventListener('click', () => {
-	totalGdmlList.forEach((path) => {
-		let gdml = loadGdml(path);
+	// If unsaved tab exists dependency check cannot happen
+	var checkUnsaved = false;
+	tabObjects.forEach((tab) => {
+		if (tab.status === UNSAVED) checkUnsaved = true;
+	})
+	if ( checkUnsaved ) return;
+
+	// TODO ::: If unsaved tabObjects exist then return and show dialog that it is not availble;
+	totalGdmlList.forEach((object) => {
+		let gdml = loadGdml(object.path);
 		if (gdml == null) {
 			console.error("GDML IS null;");
 			return;
 		}
-		checker.addNode(path, gdml["reference"]);
+		checker.addNode(object.path, gdml["reference"]);
 	})
 
 	//checker.debugPrintAll();
-	let sortesList = checker.getLevelSortedList();
-	console.log(sortesList);
-	checker.checkDependencies(sortesList);
-	console.log("After dependency check");
-	console.log(sortesList);
+	let checkerList = checker.getLevelSortedList();
+	//console.log(sortedList);
+	checker.checkDependencies(checkerList);
+	//console.log("After dependency check");
+	//console.log(sortedList);
+
+	// Sort both checkerList and totlaGdmlList by string.
+	// Order is not important, becuase two list will always have two same list of paths. 
+	totalGdmlList.sort((a,b) => {
+		return a-b;	
+	});
+	checkerList.sort((a,b) => {
+		return a-b;
+	});
+	console.log("Length of both list should be equal which is : " + totalGdmlList.length + " / " + checkerList.length);
+
+	// TODO ::: Should change statuses of menu buttons 
+	// Should change statues of opened tabs
+	for (var i = 0, len = totalGdmlList.length; i < len; i++) {
+		// Status has changed after dependency check
+		if (totalGdmlList[i].status !== checkerList[i].status) {
+			console.log("Adding new check status to : " + totalGdmlList[i].path);
+			let readFile = yaml.load(fs.readFileSync(totalGdmlList[i].path));
+			readFile["status"] = checkerList[i].status;
+			fs.writeFileSync(totalGdmlList[i].path, yaml.safeDump(readFile), 'utf8');
+		}
+	}
+
+	alert("Checked dependencies successfully");
 });
 
 // EVENT ::: Save markdown of tabObject into the file which path is associated with tabObject.
 document.querySelector('#saveFileBtn').addEventListener('click', () => {
 	let currentTabObject = tabObjects[currentTabIndex];
+	if(currentTabObject.status !== UNSAVED) return; // if file is not unsaved then skip operation
+
 	currentTabObject.content["body"] = currentTabObject.editor.getMarkdown();
-	fs.writeFileSync(currentTabObject.path, yaml.safeDump(currentTabObject.content), 'utf8');
-	alert("Saved successfully");
+	currentTabObject.status = SAVED;
+	if (!currentTabObject.manualSave) {
+		fs.writeFileSync(currentTabObject.path, yaml.safeDump(currentTabObject.content), 'utf8');
+		alert("Saved successfully");
+	} else {
+		remote.dialog.showSaveDialog(remote.getCurrentWindow(), {defaultPath: currentTabObject.path}).then((response) => {
+			if(!response.canceled) {
+				console.log(response);
+				fs.writeFileSync(response.filePath, yaml.safeDump(currentTabObject.content), 'utf8');
+				currentTabObject.tab.textContent = path.basename(response.filePath);
+				currentTabObject.manualSave = false;
+				currentTabObject.tab.dataset.path = response.filePath;
+				currentTabObject.path = response.filePath;
+			}
+		});
+	}
 });
 
-// EVENT ::: Open Dialog and get rootDirectory
+// EVENT ::: Open Dialog and set rootDirectory
 document.querySelector("#openDirBtn").addEventListener('click', () => {
 	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: __dirname, properties: ["openDirectory"]}).then((response) => {
 		if(!response.canceled) {
-			rootDirectory = response.filePaths[0];
-			console.log(rootDirectory);
-			fs.readdir(rootDirectory, (err, files) => {
-				//handling error
-				if (err) {
-					return console.log('Unable to scan directory: ' + err);
-				} 
-
-				listMenuButtons(rootDirectory , files, sideMenu);
-			});
+			// Reset gdml List
+			totalGdmlList = new Array();
+			setRootDirectory(response.filePaths[0]);
 		}
 	});
 });
+
+// TODO ::: Completely remove current tabObjects list.
+function setRootDirectory(directory) {
+	try {
+		let files = fs.readdirSync(directory);
+
+		// Remove children of sideMenu
+		while(sideMenu.firstChild) {
+			sideMenu.removeChild(sideMenu.firstChild);
+		}
+
+		listMenuButtons(directory , files, sideMenu);
+	} catch(error) {
+		return console.error('Unable to scan directory: ' + error);
+	}
+
+	// Opening new root directory
+	// Remove all existing tabObjects
+	// TODO ::: Check this code
+	if (rootDirectory !== directory && rootDirectory !== null) {
+		console.log("root directory has changed");
+		tabObjects.forEach((tabObject) => {
+			tabObject.tab.remove();
+			tabObject.screen.remove();
+		});
+	} 
+	// If reopening tabs then check if tabObjects are still valid
+	else {
+		tabObjects.forEach((tabObject) => {
+			// File now doesn't exists
+			if (!fs.existsSync(tabObject.path)) {
+				tabObject.status = UNSAVED;
+				tabObject.tab.textContent = path.basename(tabObject.path) + "*";
+			}
+			// File exists
+			else {
+				console.log("Existing file tab detected");
+				// If file has changed 
+				let readContent = yaml.load(fs.readFileSync(tabObject.path));
+				console.log("Read Content is :");
+				console.log(readContent);
+				console.log("Current tabObject is :" );
+				console.log(tabObject.content);
+				if (readContent !== tabObject.content) {
+					// If editor is unsaved
+					if (tabObject.status === UNSAVED) {
+						tabObject.manualSave = true;
+						tabObject.tab.textContent = path.basename(tabObject.path) + "*";
+					} 
+					// If editor content is uptodate
+					else {
+						tabObject.content = readContent;
+						tabObject.editor.setMarkdown(readContent["body"], false);
+					}
+				}
+			}
+		})
+	}
+	rootDirectory = directory;	
+
+	// If watch already exists then it means that setRootDirectory is called multiple times
+	// remove prior watcher and all listmenuButtons's children;
+	if (watcher !== null) {
+		// Remove watcher
+		watcher.close();
+		watcher = null;
+	}
+
+	// Set file watcher for root direoctory
+	watcher = watch(rootDirectory, {recurisve: true}, (evt, name) => {
+		// If changed file is gdml and reload the whole project
+		if (path.extname(name).toLowerCase() === ".gdml") {
+			console.log("File changed reloading root directory");
+			setRootDirectory(rootDirectory);
+		}
+	});
+}
 
 // TODO ::: Make children hierarchy better not just nested.
 // Add separator, Indentation might be good but it will make 
@@ -103,22 +238,27 @@ function listMenuButtons(root, files, parentElement) {
 // FUNCTION ::: Create File menu button
 function listFile(root, fileName, parentElement) {
 	var elem = document.createElement('button');
-	elem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", "bg-blue-500", "fileButton", "m-2");
+
 	let fullPath = path.join(root , fileName);
+	let fileYaml = yaml.load(fs.readFileSync(fullPath)); // this should not fail becuase it was read from readdirSync
+	let menuColor = UNDEFINEDCOLOR; // Undefined color
+	if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
+	else menuColor = UPTODATECOLOR;
+
 	elem.textContent = fileName;
 	elem.dataset.path = fullPath;
 	elem.addEventListener('click', loadGdmlToEditor);
+	elem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "m-2");
 	parentElement.appendChild(elem);
 	// Add value to array(list) so that dependency checker can do his job.
-	totalGdmlList.push(fullPath);
+	totalGdmlList.push({ path: fullPath, status: fileYaml["status"]});
 }
 
 // FUNCTION ::: Create directory menu button
 function listDirectory(root, dirName, parentElement) {
 	var divElem = document.createElement('div');
 	var dirElem = document.createElement('button');
-	divElem.classList.add("bg-blue-200");
-	dirElem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", "bg-blue-500", "m-2");
+	dirElem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "m-2");
 	let fullPath = path.join(root, dirName);
 	dirElem.textContent = "|-> " + dirName;
 	dirElem.dataset.path = fullPath;
@@ -138,7 +278,7 @@ function loadGdml(filePath) {
 	// If given file is not gdml then return
 	if (path.extname(filePath).toLowerCase() !== ".gdml") return null;
 	try {
-		var result = fs.readFileSync(filePath);
+		let result = fs.readFileSync(filePath);
 		return yaml.load(result);
 	} catch {
 		console.log("No file found");
@@ -155,6 +295,9 @@ function loadGdmlToEditor(event) {
 	// Load file from fs 
 	let filePath = event.currentTarget.dataset.path;
 	let tabIndex = isTabPresent(filePath);
+	console.log("Clicked side menu");
+	console.log("Filepath is : " + filePath);
+	console.log("Is tab already present ? :" + tabIndex);
 
 	if(tabIndex !== -1){
 		// Hide current tab
@@ -165,7 +308,7 @@ function loadGdmlToEditor(event) {
 		// And show selected tab
 		tabObjects[currentTabIndex].screen.style.display = "";
 		// Update Status Bar
-		statusGrphics(tabObjects[currentTabIndex].content["status"]);
+		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 		return;
 	}
 
@@ -192,13 +335,25 @@ function loadGdmlToEditor(event) {
 		// CurrentTab Index should be equal to length because in this line length is not added by 1.
 		currentTabIndex = tabObjects.length;
 		let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
-		var tabObject = {path: filePath, content: yaml.load(data), screen: editorScreenElem, editor: editorInstance};
+		var tabObject = {status: SAVED, manualSave: false, path: filePath, content: yaml.load(data), screen: editorScreenElem, tab: null, editor: editorInstance};
 		tabObjects.push(tabObject);
 
 		editorInstance.setMarkdown(tabObject.content["body"], false);
-		statusGrphics(tabObjects[currentTabIndex].content["status"]);
+		// DEBUG ::: Testing onchange event
+		editorInstance.on("change", () => {
+			let currentTab = tabObjects[currentTabIndex];
+			if (currentTab.content["body"] !== currentTab.editor.getMarkdown()) {
+				currentTab.status = UNSAVED;
+				currentTab.tab.textContent = path.basename(currentTab.path) + "*";
+			} else { // both contents are same
+				currentTab.status = SAVED;
+				currentTab.tab.textContent = path.basename(currentTab.path);
+			}
+		});
+		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 		// TODO ::: NOT YET READY
-		addNewTab(filePath);
+		let newTab = addNewTab(filePath);
+		tabObject.tab = newTab;
 	});
 }
 
@@ -221,6 +376,7 @@ function addNewTab(filePath) {
 	btnElem.dataset.path = filePath;
 	btnElem.textContent = path.basename(filePath);
 	btnElem.addEventListener('click', loadGdmlToEditor);
+	return btnElem;
 }
 
 
@@ -253,15 +409,26 @@ function initEditor(newId, element) {
 }
 
 // FUNCTION ::: Apply Status graphical effect
-function statusGrphics(statusString) {
+function statusGraphics(statusString) {
 	if( statusString === "UPTODATE" ) {
 		statusDiv.textContent = "Up to date";
-		statusDiv.classList.add("bg-blue-200");
+		statusDiv.classList.remove(UNDEFINEDCOLOR);
+		statusDiv.classList.remove(OUTDATEDCOLOR);
+		statusDiv.classList.add(UPTODATECOLOR);
 	} else if (statusString === "OUTDATED") {
 		statusDiv.textContent = "Outdated";
-		statusDiv.classList.add("bg-red-200");
+		statusDiv.classList.remove(UNDEFINEDCOLOR);
+		statusDiv.classList.add(OUTDATEDCOLOR);
+		statusDiv.classList.remove(UPTODATECOLOR);
 	} else if (statusString === "INDEFINITE") {
 		statusDiv.textContent = "Indefinte";
-		statusDiv.classList.add("bg-gray-200");
+		statusDiv.classList.add(UNDEFINEDCOLOR);
+		statusDiv.classList.remove(OUTDATEDCOLOR);
+		statusDiv.classList.remove(UPTODATECOLOR);
 	}
+}
+
+// FUNCTION ::: Reload tabs when loading root directory
+function reloadTabs() {
+
 }
