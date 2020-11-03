@@ -1,6 +1,6 @@
 'use strict';
 
-/// HEADER
+/// HEADER ::: import necessary packages.
 const { remote } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -9,38 +9,34 @@ const Editor = require('@toast-ui/editor');
 const Checker = require('./checker').Checker;
 const watch = require("node-watch");
 
+/// HEADER ::: Declare class instance to use 
 let watcher = null;
 let checker = new Checker();
 
-// COMMENTS
-// IMPORTANT NOTE !!! 
-// TODO ::: Change to initilize only editor div not a whole editorScreen so that status can be displayed 
-
 // VARAIBLE ::: Root direoctry given by user as a root for recursive file detection.
 let rootDirectory;
-// VARAIBLE ::: Total list of gdml files's paths + dependencies
+// VARAIBLE ::: Total list of gdml files's object 
+// {path : string, status: string}
 let totalGdmlList = new Array();
 
 // VARAIBLE ::: Array that stores object of following properties
-// TODO ::: Should add current file Status
-// Like Unsaved, Deleted, Or None for default
-// {path: string, content: string(yaml), screen: domElement, editor: ToastEditorInstance}
-// TODO ::: Should be something like 
 // {status: string, manualSave: boolean, path: string, content: string(yaml), screen: domElement, tab: domElement, editor: ToastEditorInstance}
 let tabObjects = new Array(); // This is list of opened tabs's which has a data of yaml string
 
 // VARAIBLE ::: Index that points to the currentTabObject
 // when no tabs are open then tabIndex is -1
+// This gets reset to -1 when new root directory is loaded.
 let currentTabIndex = -1;
 
-// VARAIBLE ::: Consts values
+// VARAIBLE ::: Consts values for prevention of wrong strings
 const OUTDATED = "OUTDATED";
 const UPTODATE = "UPTODATE";
+const UNSAVED ="UNSAVED";
+const SAVED ="SAVED";
+// COLOR value is based on tailwind-css class names
 const UNDEFINEDCOLOR = "bg-gray-500";
 const OUTDATEDCOLOR = "bg-red-300";
 const UPTODATECOLOR = "bg-blue-300";
-const UNSAVED ="UNSAVED";
-const SAVED ="SAVED";
 
 // VARAIBLE ::: Caching of specific dom elements.
 const tabMenu = document.querySelector("#openedTabs");
@@ -50,16 +46,20 @@ const statusDiv = document.querySelector("#statusBar");
 const editorScreen = document.querySelector("#editorScreen");
 editorScreen.style.display = "none";
 
-// EVENT || DEBUG ::: Make Checker object and add all gdml document sto graph node
+// EVENT ::: Make Checker object and add all gdml documents as NodeInstance to checkerinstance
 document.querySelector("#checker").addEventListener('click', () => {
 	// If unsaved tab exists dependency check cannot happen
+	// TODO ::: If unsaved tabObjects exist then return and show dialog that it is not availble;
 	var checkUnsaved = false;
 	tabObjects.forEach((tab) => {
 		if (tab.status === UNSAVED) checkUnsaved = true;
 	})
-	if ( checkUnsaved ) return;
+	if ( checkUnsaved ) {
+		alert("Unsaved tab exists cannot check dependencies");
+		return;
+	}
 
-	// TODO ::: If unsaved tabObjects exist then return and show dialog that it is not availble;
+	// Make NodeObject from totalGdmlList's item's
 	totalGdmlList.forEach((object) => {
 		let gdml = loadGdml(object.path);
 		if (gdml == null) {
@@ -69,53 +69,55 @@ document.querySelector("#checker").addEventListener('click', () => {
 		checker.addNode(object.path, gdml["reference"]);
 	})
 
-	//checker.debugPrintAll();
 	let checkerList = checker.getLevelSortedList();
-	//console.log(sortedList);
 	checker.checkDependencies(checkerList);
-	//console.log("After dependency check");
-	//console.log(sortedList);
 
-	// Sort both checkerList and totlaGdmlList by string.
-	// Order is not important, becuase two list will always have two same list of paths. 
+	// Sort both checkerList and totlaGdmlList by path(value).
+	// Order is not important, becuase two list will always have same list of paths. 
 	totalGdmlList.sort((a,b) => {
 		return a-b;	
 	});
 	checkerList.sort((a,b) => {
 		return a-b;
 	});
-	console.log("Length of both list should be equal which is : " + totalGdmlList.length + " / " + checkerList.length);
 
 	// TODO ::: Should change statuses of menu buttons 
 	// Should change statues of opened tabs
 	for (var i = 0, len = totalGdmlList.length; i < len; i++) {
-		// Status has changed after dependency check
+		// If Status has changed after dependency check, apply changes to file
+		// With this approcah caching(memory usage) is minified and I/O is maximized.
 		if (totalGdmlList[i].status !== checkerList[i].status) {
-			console.log("Adding new check status to : " + totalGdmlList[i].path);
 			let readFile = yaml.load(fs.readFileSync(totalGdmlList[i].path));
 			readFile["status"] = checkerList[i].status;
 			fs.writeFileSync(totalGdmlList[i].path, yaml.safeDump(readFile), 'utf8');
 		}
 	}
-
 	alert("Checked dependencies successfully");
 });
 
 // EVENT ::: Save markdown of tabObject into the file which path is associated with tabObject.
 document.querySelector('#saveFileBtn').addEventListener('click', () => {
+	// Get currentTabObject for easy reading
 	let currentTabObject = tabObjects[currentTabIndex];
 	if(currentTabObject.status !== UNSAVED) return; // if file is not unsaved then skip operation
 
+	// Update content body with editor's content
 	currentTabObject.content["body"] = currentTabObject.editor.getMarkdown();
+	// set status to saved because it is getting saved. It is ok to preset status 
 	currentTabObject.status = SAVED;
+
+	// If not manualSave directrly save without further procedure
 	if (!currentTabObject.manualSave) {
 		fs.writeFileSync(currentTabObject.path, yaml.safeDump(currentTabObject.content), 'utf8');
 		alert("Saved successfully");
-	} else {
+	} 
+	// If manualSave is true then show showSaveDialog to enable user's arbitrary file name.
+	else {
 		remote.dialog.showSaveDialog(remote.getCurrentWindow(), {defaultPath: currentTabObject.path}).then((response) => {
 			if(!response.canceled) {
-				console.log(response);
 				fs.writeFileSync(response.filePath, yaml.safeDump(currentTabObject.content), 'utf8');
+
+				// Change tabObject's value and textContent according to newly updated filePath(value)
 				currentTabObject.tab.textContent = path.basename(response.filePath);
 				currentTabObject.manualSave = false;
 				currentTabObject.tab.dataset.path = response.filePath;
@@ -137,6 +139,7 @@ document.querySelector("#openDirBtn").addEventListener('click', () => {
 });
 
 // TODO ::: Completely remove current tabObjects list.
+// FUNCTION ::: Set root directory and set other variables accordingly.
 function setRootDirectory(directory) {
 	try {
 		let files = fs.readdirSync(directory);
@@ -146,45 +149,56 @@ function setRootDirectory(directory) {
 			sideMenu.removeChild(sideMenu.firstChild);
 		}
 
+		// Make new sideMenu buttons
 		listMenuButtons(directory , files, sideMenu);
 	} catch(error) {
 		return console.error('Unable to scan directory: ' + error);
 	}
 
-	// Opening new root directory
-	// Remove all existing tabObjects
-	// TODO ::: Check this code
+	// If user is opening new root directory
+	// Remove all existing tabObjects, directory related variables
+	// TODO ::: Check this code, hightly prone to errors
 	if (rootDirectory !== directory && rootDirectory !== null) {
-		console.log("root directory has changed");
+
+		// Reset tabObjects
 		tabObjects.forEach((tabObject) => {
 			tabObject.tab.remove();
 			tabObject.screen.remove();
 		});
+		tabObjects = new Array();
+		currentTabIndex = -1;
+
+		// Reset statusdiv's color by removing class from classList
+		statusDiv.classList.remove(OUTDATEDCOLOR);
+		statusDiv.classList.remove(UPTODATECOLOR);
+		statusDiv.classList.remove(UNDEFINEDCOLOR);
+		statusDiv.textContent = "";
 	} 
-	// If reopening tabs then check if tabObjects are still valid
+	// If reopening same rootDirectory then check if tabObjects are still valid
 	else {
 		tabObjects.forEach((tabObject) => {
-			// File now doesn't exists
+			// File associated to tabObject now doesn't exist
 			if (!fs.existsSync(tabObject.path)) {
+				// Set status to unsaved
+				// If savefile is called then new file will be created without collision.
 				tabObject.status = UNSAVED;
 				tabObject.tab.textContent = path.basename(tabObject.path) + "*";
 			}
-			// File exists
+			// File still exists
 			else {
-				console.log("Existing file tab detected");
 				// If file has changed 
+				// load changed file contents
 				let readContent = yaml.load(fs.readFileSync(tabObject.path));
-				console.log("Read Content is :");
-				console.log(readContent);
-				console.log("Current tabObject is :" );
-				console.log(tabObject.content);
+				// Compare contents of read file and editor's contents
 				if (readContent !== tabObject.content) {
 					// If editor is unsaved
+					// Set to manualSave so that user can save to another file
 					if (tabObject.status === UNSAVED) {
 						tabObject.manualSave = true;
 						tabObject.tab.textContent = path.basename(tabObject.path) + "*";
 					} 
-					// If editor content is uptodate
+					// If editor content is not "unsaved"
+					// just copy file contents to editor
 					else {
 						tabObject.content = readContent;
 						tabObject.editor.setMarkdown(readContent["body"], false);
@@ -193,9 +207,10 @@ function setRootDirectory(directory) {
 			}
 		})
 	}
+	// Update root directory
 	rootDirectory = directory;	
 
-	// If watch already exists then it means that setRootDirectory is called multiple times
+	// If watch already exists then it means that it is not the first time function called.
 	// remove prior watcher and all listmenuButtons's children;
 	if (watcher !== null) {
 		// Remove watcher
@@ -203,11 +218,10 @@ function setRootDirectory(directory) {
 		watcher = null;
 	}
 
-	// Set file watcher for root direoctory
+	// Set new file watcher for root direoctory
 	watcher = watch(rootDirectory, {recurisve: true}, (evt, name) => {
-		// If changed file is gdml and reload the whole project
+		// If changed file is gdml then reload the whole project
 		if (path.extname(name).toLowerCase() === ".gdml") {
-			console.log("File changed reloading root directory");
 			setRootDirectory(rootDirectory);
 		}
 	});
@@ -224,12 +238,15 @@ function listMenuButtons(root, files, parentElement) {
 	// Do not show hidden files (files which names start with dot.)
 	//files = files.filter(item => !(/(^|\/)\.[^/.]/g).test(item)); // copy pasted code
 
+	// Iterate over read files from directory
 	files.forEach(function (file) {
-		// Do whatever you want to do with the file
 		let fullPath = path.join(root, file);
+		// if file is gdml file then make file button
 		if (path.extname(fullPath).toLowerCase() === ".gdml") {
 			listFile(root, file, parentElement);
-		} else if (fs.lstatSync(fullPath).isDirectory()) {
+		} 
+		// if file is directory then make directory button 
+		else if (fs.lstatSync(fullPath).isDirectory()) {
 			listDirectory(root, file, parentElement);
 		}
 	});
@@ -274,6 +291,7 @@ function listDirectory(root, dirName, parentElement) {
 	});
 }
 
+// FUNCTION ::: Simply load gdml from filePath and return as string
 function loadGdml(filePath) {
 	// If given file is not gdml then return
 	if (path.extname(filePath).toLowerCase() !== ".gdml") return null;
@@ -291,14 +309,12 @@ function loadGdml(filePath) {
 // This function is called when sideMenu button or tab button is clicked.
 function loadGdmlToEditor(event) {
 
-	// TODO ::: If tab is already open then redirect tab dat into editor.
+	// TODO ::: If tab is already open then copy tab data into editorInstance.
 	// Load file from fs 
 	let filePath = event.currentTarget.dataset.path;
 	let tabIndex = isTabPresent(filePath);
-	console.log("Clicked side menu");
-	console.log("Filepath is : " + filePath);
-	console.log("Is tab already present ? :" + tabIndex);
 
+	// If file is already open thus tab exists
 	if(tabIndex !== -1){
 		// Hide current tab
 		tabObjects[currentTabIndex].screen.style.display = "none";
@@ -313,19 +329,18 @@ function loadGdmlToEditor(event) {
 	}
 
 	// When tab is opened and user is trying to open another tab with another file
+	// Hide currently visible tab.
 	if(currentTabIndex != -1) {
-		console.log("HIDING CURRENT TAB");
 		tabObjects[currentTabIndex].screen.style.display = "none";
 	}
 
 
+	// If not tab is open, then read file and paset data into newly created editor. 
 	fs.readFile(filePath, 'utf8', (err, data) => {
 		if (err) {
 			alert("Failed to read file");
 			return;
 		}
-		console.log("SUccesfully read gdml and pasting to editor");
-
 		let editorScreenElem = editorScreen.cloneNode(true);
 		mainDiv.appendChild(editorScreenElem);
 		editorScreenElem.style.display = "";
@@ -339,7 +354,10 @@ function loadGdmlToEditor(event) {
 		tabObjects.push(tabObject);
 
 		editorInstance.setMarkdown(tabObject.content["body"], false);
-		// DEBUG ::: Testing onchange event
+
+		// If editor's content changes and content is different from original one
+		// then set status to unsaved.
+		// Also change tab's name to distinguishing.
 		editorInstance.on("change", () => {
 			let currentTab = tabObjects[currentTabIndex];
 			if (currentTab.content["body"] !== currentTab.editor.getMarkdown()) {
@@ -351,7 +369,8 @@ function loadGdmlToEditor(event) {
 			}
 		});
 		statusGraphics(tabObjects[currentTabIndex].content["status"]);
-		// TODO ::: NOT YET READY
+
+		// Add new Tab 
 		let newTab = addNewTab(filePath);
 		tabObject.tab = newTab;
 	});
@@ -426,9 +445,4 @@ function statusGraphics(statusString) {
 		statusDiv.classList.remove(OUTDATEDCOLOR);
 		statusDiv.classList.remove(UPTODATECOLOR);
 	}
-}
-
-// FUNCTION ::: Reload tabs when loading root directory
-function reloadTabs() {
-
 }

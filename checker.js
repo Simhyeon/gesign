@@ -5,6 +5,8 @@ const OUTDATED = "OUTDATED";
 const UPTODATE = "UPTODATE";
 const NOTCHECKED = "NOTCHECKED";
 
+// CLASS ::: Used by Checker class instance
+// Saves values needed for dependencies checking.
 class NodeObject {
 	constructor(value, references) {
 		var stats = fs.statSync(value);
@@ -14,65 +16,39 @@ class NodeObject {
 		this.level = 0;
 		this.status = NOTCHECKED;
 		this.lastModified = mtime; // read from filesystem and check it. 
-		this.parentList = new Set();
-		this.childrenList = new Set();
+		this.parentSet = new Set();
+		this.childrenSet = new Set();
 		if( references !== null ) {
 			references.forEach((item) => {
-				this.childrenList.add(item);
+				this.childrenSet.add(item);
 			});
 		}
 	}
 
-	//get value() {
-		//return this.value;
-	//}
-	//set value(new_value) {
-		//this.value = new_value;
-	//}
-
-	//get level() {
-		//return this.level;
-	//}
-	//set level(new_level) {
-		//this.level = new_level;
-	//}
-
-	//get parentList() {
-		//return this.parentList;
-	//}
-
-	//get childrenList() {
-		//return this.childrenList;
-	//}
-
-	//setLevel(level) {
-		//this.level = level;
-	//}
-
 	addParent(nodeName) {
-		this.parentList.add(nodeName);
+		this.parentSet.add(nodeName);
 	}
 
 	addChild(nodeName) {
-		this.childrenList.add(nodeName);
+		this.childrenSet.add(nodeName);
 	}
 
+	// this replace childrenSet not adding to existing set
 	setChildren(nodeNameArray) {
 		if( nodeNameArray === null || nodeNameArray.length === 0 ) return;
-		this.childrenList = new Set(nodeNameArray);
+		this.childrenSet = new Set(nodeNameArray);
 	}
 }
 
 module.exports = {
+	// CLASS ::: Checker class to check dependencies of given nodesMap
 	Checker : class Checker {
 		constructor() {
 			this.nodes = new Map();
 		}
 
-		// TODO ::: make this set to add parent and children node if non existant
-		// COMMENTATION ::: Basic Principle
+		// COMMENT ::: Basic Principle
 		// Create node if child node doesn't exist
-		//
 		// Update Level
 		// if newly created (createNew == true) and children already exists then 
 		// set level to children's level + 1
@@ -80,7 +56,7 @@ module.exports = {
 		// current node - 1 
 		// if not newly created and has multiple children, then set current node's
 		// level to highest child's level + 1
-		// TODO ::: References are gien as list of string while nodeObject is currently represented as nodeObject change this
+		// METHOD ::: Add node to nodesMap
 		addNode(value, references) {
 			// Add node if doesn't already exist
 			let targetNode;
@@ -98,7 +74,7 @@ module.exports = {
 			// There can be three statuses
 			// 1. all children exists
 			// 2. all children dosn't exists
-			// 3. complex status
+			// 3. complex status, some exists some doesn't
 			let existingChildren = new Array();
 			let nonExistingChildren = new Array();
 
@@ -120,6 +96,7 @@ module.exports = {
 						nonExistingChildren.push(childNode);
 						this.nodes.set(childNode.value, childNode);
 					}
+					// Push childrenNode to cache  and add child to childrenSet of targetNode
 					childrenCache.push(childNode);
 					targetNode.addChild(childNode.value);
 				});
@@ -167,6 +144,8 @@ module.exports = {
 
 		}
 
+		// FUNCTION ::: Increase level by 1 recursively following parents
+		// If recursive reference detected throw exception 
 		recursiveInc(startNodeName, nodeObject) {
 			nodeObject.level++;
 			Array.from(nodeObject.parentList).forEach((parentName) => {
@@ -179,6 +158,7 @@ module.exports = {
 			})
 		}
 
+		// DEBUG || FUNCTION ::: Debugging function to print nodesMap
 		debugPrintAll() {
 			console.log(this.nodes);
 			console.log(Array.from(this.nodes.values()));
@@ -187,6 +167,7 @@ module.exports = {
 			//});
 		}
 
+		// FUNCTION ::: get node by value from nodeMap
 		getNode(value) {
 			if (this.nodes.has(value)) {
 				return this.nodes.get(value);
@@ -197,15 +178,16 @@ module.exports = {
 
 		// TODO ::: Currently this is getting argument so taht debugging is easy
 		// use of getLevelSortedList function inside of checkDependencies for real production code
-		// Check dependencies and return status list(array) according to depdencies' timestamps
+		// FUNCTION ::: Check dependencies and return status list(array) according to dependencies' timestamps and status
 		checkDependencies(values) {
-			// if no children then set UPTODATE
-			// if has children compar timestmamps
 			values.forEach((item) => {
+				// if no children then set UPTODATE
 				if (item.childrenList.size === 0) {
 					console.log("Up to date");
 					item.status = UPTODATE;
-				} else {
+				} 
+				// if has children compare timestmamps
+				else {
 					var isOutdated = Array.from(item.childrenList).some((child) => {
 						let node = this.getNode(child); // this should not be null becuase childrenList is added from real Node.
 						return (node.status == OUTDATED || item.lastModified.getTime() < node.lastModified.getTime());
@@ -217,10 +199,9 @@ module.exports = {
 			});
 		}
 
-		// Get Level sorted list from map's values
+		// FUNCTION ::: Get Level sorted list from map's values
+		// Sort by increasing order. lowest order comes first.
 		getLevelSortedList() {
-			// Sort by increasing order.
-			//
 			let values = Array.from(this.nodes.values());
 
 			values.sort((a,b) => {

@@ -37,19 +37,31 @@
 	-> Dependency check should be done when all files are saved (wihout unsaved tabs). => Done
 	-> Currently dependencies check doesn't save to files fix this. -> Done
 
-	### Keep in mind this milestone
-	-> Reading sysroot calls should check dependencies before user interaction. or shouldn't?
-
 1. Implement file watch feature.
 	-> Should work as reload whole sysroot files => Done
 	-> Display Current status of opened tab as somewhat like (deleted or renamed?) => Done with simple asterisk
 	-> Reloading should affect existing tabs -> Done
 
-1.5 Make comments for all functions and variables
+20201104 ------ DONE
 
-1.7 Add aesthetics
-	-> 
+### IMPORTANT!!!
+### Keep in mind this milestone
+-> Reading sysroot calls should check dependencies before user interaction. or shouldn't?
 
-2. Make config file 
+2 Make comments for all functions and variables
 
-3. Maybe add markdown file support for temporary file before saving into gdml file
+3 Add aesthetics
+	-> Make sidenave always visible and move all buttons inside of navMenu
+	-> Make status bar and tab buttons go with current toastuieditor (or find what toastuieditor has used. There must be a referecnes).
+
+4. Enable drag and drop for references
+    -> Show references to upper part of editor.
+	-> Only add to temporary content apply when save button is clicked.
+
+5. Notify which file is in mutual references error and make mutual refernce exception visible to end users.
+
+6. Make accelerator(Shortcut key of electron) work with button actions
+
+#. Make config file 
+
+#. Maybe add markdown file support for temporary file before saving into gdml file
