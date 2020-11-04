@@ -34,9 +34,9 @@ const UPTODATE = "UPTODATE";
 const UNSAVED ="UNSAVED";
 const SAVED ="SAVED";
 // COLOR value is based on tailwind-css class names
-const UNDEFINEDCOLOR = "bg-gray-500";
-const OUTDATEDCOLOR = "bg-red-300";
-const UPTODATECOLOR = "bg-blue-300";
+const UNDEFINEDCOLOR = "bg-gray-700";
+const OUTDATEDCOLOR = "bg-red-500";
+const UPTODATECOLOR = "bg-blue-500";
 
 // VARAIBLE ::: Caching of specific dom elements.
 const tabMenu = document.querySelector("#openedTabs");
@@ -173,6 +173,7 @@ function setRootDirectory(directory) {
 		statusDiv.classList.remove(UPTODATECOLOR);
 		statusDiv.classList.remove(UNDEFINEDCOLOR);
 		statusDiv.textContent = "";
+		statusDiv.style.display = "none";
 	} 
 	// If reopening same rootDirectory then check if tabObjects are still valid
 	else {
@@ -275,6 +276,7 @@ function listFile(root, fileName, parentElement) {
 function listDirectory(root, dirName, parentElement) {
 	var divElem = document.createElement('div');
 	var dirElem = document.createElement('button');
+	divElem.classList.add("border-gray-700", "border-t", "border-b", "flex", "flex-col");
 	dirElem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "m-2");
 	let fullPath = path.join(root, dirName);
 	dirElem.textContent = "|-> " + dirName;
@@ -368,6 +370,10 @@ function loadGdmlToEditor(event) {
 				currentTab.tab.textContent = path.basename(currentTab.path);
 			}
 		});
+
+		statusDiv.style.display = "";
+		// TODO ::: Make this work 
+		// referenceDiv.style.display= "";
 		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 
 		// Add new Tab 
@@ -390,7 +396,7 @@ function isTabPresent(filePath) {
 function addNewTab(filePath) {
 	// TODO ::: Add dom element
 	let btnElem = document.createElement('button');
-	btnElem.classList.add("rounded", "font-bold", "text-white", "bg-blue-500", "text-center", "px-2", "mx-2");
+	btnElem.classList.add("blankButton");
 	tabMenu.appendChild(btnElem);
 	btnElem.dataset.path = filePath;
 	btnElem.textContent = path.basename(filePath);

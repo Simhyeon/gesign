@@ -10,7 +10,7 @@ let win;
 
 // ELECTRON Initiation
 function createWindow() {
-	win = new BrowserWindow({webPreferences: {
+	win = new BrowserWindow({minWidth: 800, minHeight: 500, webPreferences: {
 		nodeIntegration: true,
 		enableRemoteModule: true
 	}});

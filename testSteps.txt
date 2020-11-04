@@ -49,18 +49,31 @@
 -> Reading sysroot calls should check dependencies before user interaction. or shouldn't?
 
 2 Make comments for all functions and variables
+-> Done
 
 3 Add aesthetics
-	-> Make sidenave always visible and move all buttons inside of navMenu
+	-> Make sidenav always visible and move all buttons inside of navMenu
 	-> Make status bar and tab buttons go with current toastuieditor (or find what toastuieditor has used. There must be a referecnes).
 
-4. Enable drag and drop for references
+4. Enable drag and drop for references -> There is no such done in graphic design... which sucks
     -> Show references to upper part of editor.
 	-> Only add to temporary content apply when save button is clicked.
+	=> Somewhat satisfied going to lext step
+
+5. Ergonoic boost
+	-> Display references inside of status bars
+		-> Show which reference document is outdated.
+	-> Display close button next to tab menu
+	-> Display root directory on top of side menu
+	-> Change direcotory naming when toggleing
+	-> Show basic direction(like click the open directory button to start the jobs text is displayed on startup screen)
+	-> Make help text on hover icon buttons.
 
 5. Notify which file is in mutual references error and make mutual refernce exception visible to end users.
 
 6. Make accelerator(Shortcut key of electron) work with button actions
+
+7. Export to pdf option.
 
 #. Make config file 
 

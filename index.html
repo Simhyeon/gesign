@@ -9,40 +9,39 @@
 		<!--Depdency for tui editor-->
 		<link rel="stylesheet" href="node_modules/codemirror/lib/codemirror.css"/>
 		<link rel="stylesheet" href="node_modules/@toast-ui/editor/dist/toastui-editor.css"/>
+		<link rel="stylesheet" href="node_modules/@fortawesome/fontawesome-free/css/all.css"/>
 	</head>
 	<body>
 		<div id="screen" class="flex w-full h-full">
-			<div id="sideNav" class="sidenav flex flex-col w-256 bg-gray-200">
+			<div id="sideNav" class="sidenav flex flex-col bg-gray-400 border-r" style="width: 245px; max-width: 384px;">
 				<div id="appMenu" class="appmenu flex flex-col w-full">
-					<div class=""></div>
+					<div id="testFiles" class="flex border-b">
+						<button id="saveFileBtn" class="py-1 px-2 mx-2"><i class="far fa-save"></i></button>
+						<button id="openDirBtn" class="py-1 px-2 mx-2"><i class="far fa-folder-open"></i></button>
+						<button id="checker"class="py-1 px-2 mx-2"><i class="far fa-check-square"></i></button>
+					</div>
 				</div>
-				<div id="menuContents" class="flex flex-col">
+				<div id="menuContents" class="flex flex-col overflow-y-auto">
 
 				</div>
 			</div>
 			<div id="main" class="flex flex-col h-full w-full" >
-				<!-- -->
-				<div id="openedTabs" class="h-36 flex" style="height: 3%; min-height: 30px">
+				<div id="openedTabs" class="pl-2 bg-gray-400 h-36 flex border-b" style="height: 3%; min-height: 33px">
 					<div class="tab"></div>
 				</div>
-				<!-- -->
-				<div id="statusBar" class="h-36 flex" style="height: 3%; min-height: 30px">
-					<div class="tab">Status Bars</div>
+				<div id="metaLines" class="flex border-b bg-gray-100" style="height: 3%; min-height: 30px">
+					<div class="item-center justify-start flex">
+						<div id="statusBar" style="display:none;"class="h-full mx-2 bg-white text-gray-800 font-semibold py-1 px-2 border border-gray-400 rounded shadow text-center inline-block w-auto align-middle">Status</div>
+						<div id="references" style="display:none;"class="overflow-x-auto">
+							<div id="refTag" class="h-full mx-2 bg-white text-gray-800 font-semibold py-1 px-2 border border-gray-400 rounded shadow text-center inline-block w-auto align-middle">Reference</div>
+						</div>
+					</div>
 				</div>
-				<!-- -->
 				<div id="editorScreen" style="height: 85%">
-				</div>
-				<!-- -->
-				<div id="testFiles" class="flex p-4">
-					<button id="openFileBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">OpenFile</button>
-					<button id="saveFileBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">SaveFile</button>
-					<button id="openDirBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">OpenDirectory</button>
-					<button id="checker" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Checker</button>
 				</div>
 			</div>
 		</div>
 
-		<!--<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>-->
 		<script charset="utf-8" src="index.js"></script>
 	</body>
 </html>
