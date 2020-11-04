@@ -35,6 +35,8 @@ const UNSAVED ="UNSAVED";
 const SAVED ="SAVED";
 // COLOR value is based on tailwind-css class names
 const UNDEFINEDCOLOR = "bg-gray-700";
+const HIGHLIGHT ="bg-gray-200";
+const NORMALBG = "bg-white";
 const OUTDATEDCOLOR = "bg-red-500";
 const UPTODATECOLOR = "bg-blue-500";
 
@@ -43,6 +45,7 @@ const tabMenu = document.querySelector("#openedTabs");
 const sideMenu = document.querySelector('#menuContents');
 const mainDiv = document.querySelector("#main");
 const statusDiv = document.querySelector("#statusBar");
+const refDiv = document.querySelector("#references");
 const editorScreen = document.querySelector("#editorScreen");
 editorScreen.style.display = "none";
 
@@ -128,7 +131,7 @@ document.querySelector('#saveFileBtn').addEventListener('click', () => {
 });
 
 // EVENT ::: Open Dialog and set rootDirectory
-document.querySelector("#openDirBtn").addEventListener('click', () => {
+document.querySelector("#openDirBtn").addEventListener('click', (event) => {
 	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: __dirname, properties: ["openDirectory"]}).then((response) => {
 		if(!response.canceled) {
 			// Reset gdml List
@@ -149,11 +152,22 @@ function setRootDirectory(directory) {
 			sideMenu.removeChild(sideMenu.firstChild);
 		}
 
+		// Make root directory buttonish div
+		var divElem = document.createElement('div');
+		var dirElem = document.createElement('div');
+		divElem.classList.add("border-gray-700", "border-b", "flex", "flex-col");
+		dirElem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "m-2");
+		dirElem.textContent = "<" + path.basename(directory) + ">";
+		sideMenu.appendChild(divElem);
+		divElem.appendChild(dirElem);
+
 		// Make new sideMenu buttons
 		listMenuButtons(directory , files, sideMenu);
 	} catch(error) {
 		return console.error('Unable to scan directory: ' + error);
 	}
+
+	document.querySelector("#helpText").style.display = "none";
 
 	// If user is opening new root directory
 	// Remove all existing tabObjects, directory related variables
@@ -238,6 +252,8 @@ function listMenuButtons(root, files, parentElement) {
 	// TODO ::: This should be handled as a proper config settings.
 	// Do not show hidden files (files which names start with dot.)
 	//files = files.filter(item => !(/(^|\/)\.[^/.]/g).test(item)); // copy pasted code
+	//
+	// Make root directory 
 
 	// Iterate over read files from directory
 	files.forEach(function (file) {
@@ -279,7 +295,7 @@ function listDirectory(root, dirName, parentElement) {
 	divElem.classList.add("border-gray-700", "border-t", "border-b", "flex", "flex-col");
 	dirElem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "m-2");
 	let fullPath = path.join(root, dirName);
-	dirElem.textContent = "|-> " + dirName;
+	dirElem.textContent = "↓" + dirName;
 	dirElem.dataset.path = fullPath;
 	dirElem.addEventListener('click', toggleChildren);
 	parentElement.appendChild(divElem);
@@ -320,13 +336,19 @@ function loadGdmlToEditor(event) {
 	if(tabIndex !== -1){
 		// Hide current tab
 		tabObjects[currentTabIndex].screen.style.display = "none";
+		tabObjects[currentTabIndex].tab.parentElement.classList.remove(HIGHLIGHT);
+		tabObjects[currentTabIndex].tab.parentElement.classList.add(NORMALBG);
 
 		// Change currentTabIndex
 		currentTabIndex = tabIndex;
 		// And show selected tab
 		tabObjects[currentTabIndex].screen.style.display = "";
+		tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
+		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
 		// Update Status Bar
 		statusGraphics(tabObjects[currentTabIndex].content["status"]);
+		// TODO ::: COMPLETE THIS
+		listReferences();
 		return;
 	}
 
@@ -334,6 +356,8 @@ function loadGdmlToEditor(event) {
 	// Hide currently visible tab.
 	if(currentTabIndex != -1) {
 		tabObjects[currentTabIndex].screen.style.display = "none";
+		tabObjects[currentTabIndex].tab.parentElement.classList.remove(HIGHLIGHT);
+		tabObjects[currentTabIndex].tab.parentElement.classList.add(NORMALBG);
 	}
 
 
@@ -371,14 +395,18 @@ function loadGdmlToEditor(event) {
 			}
 		});
 
-		statusDiv.style.display = "";
-		// TODO ::: Make this work 
-		// referenceDiv.style.display= "";
-		statusGraphics(tabObjects[currentTabIndex].content["status"]);
-
 		// Add new Tab 
 		let newTab = addNewTab(filePath);
 		tabObject.tab = newTab;
+
+		// TODO ::: Make this work 
+		// referenceDiv.style.display= "";
+		statusDiv.style.display = "";
+		tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
+		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
+		// TODO ::: COMPLETE THIS
+		listReferences();
+		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 	});
 }
 
@@ -394,14 +422,63 @@ function isTabPresent(filePath) {
 
 // FUNCTION ::: Add new tab to tab menus' parent div
 function addNewTab(filePath) {
-	// TODO ::: Add dom element
+	let divElem = document.createElement('div');
 	let btnElem = document.createElement('button');
-	btnElem.classList.add("blankButton");
-	tabMenu.appendChild(btnElem);
+
+	divElem.classList.add("blankButton", "bg-white");
+
 	btnElem.dataset.path = filePath;
 	btnElem.textContent = path.basename(filePath);
 	btnElem.addEventListener('click', loadGdmlToEditor);
+
+	// TODO :: Make close button
+	let closeButton = document.createElement('button');
+	let iconElement = document.createElement('i');
+	iconElement.classList.add("fas", "fa-times", "pl-1");
+	closeButton.addEventListener('click', (event) => {
+		// Get parent target and close
+		// Also stop propagation so that clicking parent button should not be triggered.
+		closeTab();
+		event.stopPropagation();
+	});
+
+	closeButton.append(iconElement);
+	divElem.appendChild(btnElem);
+	divElem.appendChild(closeButton);
+	tabMenu.appendChild(divElem);
+
 	return btnElem;
+}
+
+function closeTab() {
+	let currentTabObject = tabObjects[currentTabIndex];
+	currentTabObject.tab.parentElement.remove();
+	currentTabObject.screen.remove();
+
+	// Delete tabObject from array
+	tabObjects.splice(currentTabIndex, 1);
+	statusDiv.style.display="none";
+	// decrement index
+
+	// if other tabs are exsiting
+	if (tabObjects.length !== 0) {
+		if (currentTabIndex - 1 > -1) {
+			currentTabIndex -= 1;
+		}
+		// Show prior tab
+		tabObjects[currentTabIndex].screen.style.display = "";
+		tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
+		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
+		// Update Status Bar
+		statusDiv.style.display="block";
+		// TODO ::: COMPLETE THIS
+		listReferences();
+		statusGraphics(tabObjects[currentTabIndex].content["status"]);
+	} 
+	// Tab object's length is 0 so reset tabIndex to -1
+	else {
+		currentTabIndex = -1;
+	}
 }
 
 
@@ -409,9 +486,14 @@ function addNewTab(filePath) {
 function toggleChildren(event) {
 	let children = event.currentTarget.parentElement.querySelectorAll(".fileButton");
 	children.forEach((child) => {
+		// If not folded then fold
 		if (child.style.display === "none") {
+			event.currentTarget.textContent = "↓" +path.basename(event.currentTarget.dataset.path);
 			child.style.display = "block";
-		} else {
+		} 
+		// if folded then unfold
+		else {
+			event.currentTarget.textContent = "| " +path.basename(event.currentTarget.dataset.path);
 			child.style.display = "none";
 		}
 	});
@@ -451,4 +533,8 @@ function statusGraphics(statusString) {
 		statusDiv.classList.remove(OUTDATEDCOLOR);
 		statusDiv.classList.remove(UPTODATECOLOR);
 	}
+}
+
+function listReferences() {
+	// Get List of references and make button element and finally add event listener loadGdmlToEditor to it. 
 }

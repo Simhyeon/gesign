@@ -63,11 +63,11 @@
 5. Ergonoic boost
 	-> Display references inside of status bars
 		-> Show which reference document is outdated.
-	-> Display close button next to tab menu
-	-> Display root directory on top of side menu
-	-> Change direcotory naming when toggleing
-	-> Show basic direction(like click the open directory button to start the jobs text is displayed on startup screen)
-	-> Make help text on hover icon buttons.
+	-> Display close button next to tab menu => Done
+	-> Display root directory on top of side menu => Done
+	-> Change direcotory naming when toggleing => Done
+	-> Show basic direction(like click the open directory button to start the jobs text is displayed on startup screen) => Done
+	-> Make help text on hover icon buttons. => Done... but somewhat not perfect.
 
 5. Notify which file is in mutual references error and make mutual refernce exception visible to end users.
 

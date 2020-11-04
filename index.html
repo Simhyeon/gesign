@@ -12,13 +12,14 @@
 		<link rel="stylesheet" href="node_modules/@fortawesome/fontawesome-free/css/all.css"/>
 	</head>
 	<body>
+		<div id="helpText" style="top: 50%; left: 40%; font-size: 20px; position: fixed; z-index: 10; color: gray">Open directory to start editing gdml files</div>
 		<div id="screen" class="flex w-full h-full">
 			<div id="sideNav" class="sidenav flex flex-col bg-gray-400 border-r" style="width: 245px; max-width: 384px;">
 				<div id="appMenu" class="appmenu flex flex-col w-full">
 					<div id="testFiles" class="flex border-b">
-						<button id="saveFileBtn" class="py-1 px-2 mx-2"><i class="far fa-save"></i></button>
-						<button id="openDirBtn" class="py-1 px-2 mx-2"><i class="far fa-folder-open"></i></button>
-						<button id="checker"class="py-1 px-2 mx-2"><i class="far fa-check-square"></i></button>
+						<button id="saveFileBtn" class="py-1 px-2 mx-2 tooltip"><span class="tooltiptext">Save File</span><i class="far fa-save"></i></button>
+						<button id="openDirBtn" class="py-1 px-2 mx-2 tooltip"><span class="tooltiptext">Open root directory</span><i class="far fa-folder-open"></i></button>
+						<button id="checker" class="py-1 px-2 mx-2 tooltip"><span class="tooltiptext">Check depdencies</span><i class="far fa-check-square"></i></button>
 					</div>
 				</div>
 				<div id="menuContents" class="flex flex-col overflow-y-auto">
@@ -27,7 +28,6 @@
 			</div>
 			<div id="main" class="flex flex-col h-full w-full" >
 				<div id="openedTabs" class="pl-2 bg-gray-400 h-36 flex border-b" style="height: 3%; min-height: 33px">
-					<div class="tab"></div>
 				</div>
 				<div id="metaLines" class="flex border-b bg-gray-100" style="height: 3%; min-height: 30px">
 					<div class="item-center justify-start flex">
