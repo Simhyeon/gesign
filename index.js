@@ -40,8 +40,8 @@ const UNSAVEDSYMBOL = "+";
 
 // VARAIBLE ::: COLOR value is based on tailwind-css class names
 const UNDEFINEDCOLOR = "bg-gray-700";
-const HIGHLIGHT ="bg-gray-300";
-const NORMALBG = "bg-white";
+const HIGHLIGHT = "bg-white"; 
+const NORMALBG = "bg-gray-300";
 const OUTDATEDCOLOR = "bg-red-500";
 const UPTODATECOLOR = "bg-blue-500";
 
@@ -62,12 +62,16 @@ editorScreen.style.display = "none";
 // Set electron menu and local shortcut for file navigations.
 const menu = new Menu()
 menu.append(new MenuItem({
-  label: 'File',
+  label: 'Menu',
   submenu: [{
     label: 'Open Directory',
     accelerator: process.platform === 'darwin' ? 'Cmd+Shift+O' : 'Control+Shift+O',
     click: () => { document.querySelector("#openDirBtn").click(); }
   },{
+	  label: 'New File',
+	  accelerator: process.platform === 'darwin' ? 'Cmd+Shift+N' : 'Control+Shift+N',
+	  click: () => { document.querySelector("#addNewDocument").click(); }
+  }, {
     label: 'Save File',
     accelerator: process.platform === 'darwin' ? 'Cmd+Shift+S' : 'Control+Shift+S',
     click: () => { document.querySelector("#saveFileBtn").click(); }
@@ -79,6 +83,68 @@ menu.append(new MenuItem({
   ]
 }))
 Menu.setApplicationMenu(menu)
+
+// EVENT ::: Add new Document to tab
+document.querySelector("#addNewDocument").addEventListener('click', () => {
+
+	if (rootDirectory == null) return;
+
+	// Hide Button
+	if (tabObjects.length !== 0) {
+		hideCurrentTab();
+	}
+
+	let metaElem = metaBar.cloneNode(true);
+	let editorScreenElem = editorScreen.cloneNode(true);
+	mainDiv.appendChild(metaElem);
+	mainDiv.appendChild(editorScreenElem);
+	metaElem.style.display = "";
+	editorScreenElem.style.display = "";
+
+	currentTabIndex = tabObjects.length;
+	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
+	var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: true, path: "new.gdml", refs: new Set() ,content: {status: UPTODATE, reference: new Array(), confirmed_by: "" ,body: ""}, meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
+	tabObjects.push(tabObject);
+
+	// If editor's content changes and content is different from original one
+	// then set status to unsaved.
+	// Also change tab's name to somewhat distinguishable.
+	editorInstance.on("change", () => {
+		let currentTab = tabObjects[currentTabIndex];
+		if (currentTab.content["body"] !== currentTab.editor.getMarkdown()) {
+			currentTab.contentStatus = UNSAVED;
+			currentTab.tab.textContent = path.basename(currentTab.path) + UNSAVEDSYMBOL;
+		} else { // both contents are same
+			currentTab.contentStatus = SAVED;
+			if (currentTab.refStatus === SAVED) {
+				currentTab.tab.textContent = path.basename(currentTab.path);
+			}
+		}
+	});
+
+	// Add new Tab 
+	let newTab = addNewTab("new.gdml");
+	tabObject.tab = newTab;
+
+	// Set highlight color
+	tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
+	tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
+
+	// set status graphic
+	statusGraphics(tabObjects[currentTabIndex].content["status"]);
+	// TODO ::: COMPLETE THIS
+	// Don't need this.
+	//listReferences();
+
+	//let refDiv = metaElem.querySelector("#references");
+	// Add drag drop event to references
+	metaElem.addEventListener('dragover', (event) => {
+		event.preventDefault();
+	});
+	metaElem.addEventListener('drop', (event) => {
+		addRefBtn(event.dataTransfer.getData("text"), false);
+	});
+});
 
 // EVENT ::: Make Checker object and add all gdml documents as NodeInstance to checkerinstance
 document.querySelector("#checker").addEventListener('click', () => {
@@ -560,6 +626,11 @@ function addNewTab(filePath) {
 // TODO ::: Warn if unsaved content exists.
 function closeTab() {
 	let currentTabObject = tabObjects[currentTabIndex];
+
+	if (currentTabObject.refStatus !== SAVED || currentTabObject.contentStatus !== SAVED) {
+		if (!confirm("Unsaved content exists. Do exit?")) return;
+	}
+
 	currentTabObject.tab.parentElement.remove();
 	currentTabObject.screen.remove();
 	currentTabObject.meta.remove();
