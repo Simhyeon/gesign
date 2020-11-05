@@ -535,6 +535,26 @@ function statusGraphics(statusString) {
 	}
 }
 
+// TODO ::: MAke this work
 function listReferences() {
+	let currentTabObject = tabObjects[currentTabIndex];
+	let references = tabObjects[currentTabIndex].content["refernce"]; // This is array
+	references.forEach((ref) => {
+		var elem = document.createElement('button');
+
+		let fullPath = path.join(root , fileName);
+		let fileYaml = yaml.load(fs.readFileSync(fullPath)); // this should not fail becuase it was read from readdirSync
+		let menuColor = UNDEFINEDCOLOR; // Undefined color
+		if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
+		else menuColor = UPTODATECOLOR;
+
+		elem.textContent = fileName;
+		elem.dataset.path = fullPath;
+		elem.addEventListener('click', loadGdmlToEditor);
+		elem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "m-2");
+		parentElement.appendChild(elem);
+		// Add value to array(list) so that dependency checker can do his job.
+		totalGdmlList.push({ path: fullPath, status: fileYaml["status"]});
+	});
 	// Get List of references and make button element and finally add event listener loadGdmlToEditor to it. 
 }
