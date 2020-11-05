@@ -55,10 +55,37 @@
 	-> Make sidenav always visible and move all buttons inside of navMenu
 	-> Make status bar and tab buttons go with current toastuieditor (or find what toastuieditor has used. There must be a referecnes).
 
-4. Enable drag and drop for references + Able to input reference by hand
-    -> Show references to upper part of editor.
-	-> Make refDiv consistant over tabs
-	-> Only add to temporary content apply when save button is clicked.
+!4. Enable drag and drop for references 
+	X Able to input reference by hand => This should be done with full Path which is just too trivial trash it.
+    -> Show references to upper part of editor. => Done
+	-> Make refDiv consistant over tabs => Done
+	-> Only add to temporary content apply when save button is clicked. => Done
+	-> Check if saving is really working.
+		-> DEBUGGIN 
+		-> Changed content is applied to file.
+		-> Save button doesn't change tab text => Just made to change it 
+		-> Reloading button does it's job
+
+		-> Next step 
+		-> Check if exterior change is detected both for content and references
+
+		-> DEBUGGIN
+		-> changed inside of editor and changed outside
+		-> Manual save activated
+		-> Saved and error ocurred
+			-> Which was just typo
+		-> However after that. 
+		-> hello_world2.gdml list button still redirects to hello_world3 tab not 2
+			-> 2 changed to 3 thus 2 list should go to 2 tab
+				->  This was because I set highlight color stupid... Quit it already ffs  
+			-> 2 tab is shown as unsaved for no reason?
+				-> Unsaved was due to br tag which is quite mysterious
+		-> Newly modified document's ref tag's close button doesn't work it spits delte(refValue) is not a function.
+		-> Because refs have beceom array? WTF? It should be a set
+		-> Ok it was set from elsewhere LIke i don't shit... I just changed it
+		-> With both content and reference change after save it still didn't make saved status
+			-> Because I was not setting refStatus
+		-> Made status change after showSaveDialog has not canceled it was not ok to preset status although comment said so.
 
 !4.5 Maybe depdencies checker glitch exists... check why no children document is set as outdated. => Done
 	-> This should be set as updated.
@@ -86,6 +113,10 @@ X7. Export to pdf option.  => F* this shit... priting ti pdf is much lightweight
 !7.7 Print button => Partial Done
 	-> However it will markdown in markdown mode => Just made it to switch to wysiwyg mode.
 
+8. Make new document button.
+
+8.5 Find a way to make toastuieditor's shortcut doesn't collid with electron's shortcut
+
 #. Make config file 
 
 #. Maybe add markdown file support for temporary file before saving into gdml file
@@ -93,3 +124,6 @@ X7. Export to pdf option.  => F* this shit... priting ti pdf is much lightweight
 #. Custom markdown css rules? => Not necessary but would be fun to use yet hard to implement.
 
 #. Maybe open recent directory.
+
+#. Check if manual save mechanism is alright
+	-> Because if manual save is activated then it will not be deactivated until saving.

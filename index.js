@@ -9,6 +9,7 @@ const yaml = require('js-yaml');
 const Editor = require('@toast-ui/editor');
 const Checker = require('./checker').Checker;
 const watch = require("node-watch");
+const _ = require("lodash");
 
 /// HEADER ::: Declare class instance to use 
 let watcher = null;
@@ -21,7 +22,7 @@ let rootDirectory = null;
 let totalGdmlList = new Array();
 
 // VARAIBLE ::: Array that stores object of following properties
-// {status: string, manualSave: boolean, path: string, content: string(yaml), screen: domElement, tab: domElement, editor: ToastEditorInstance}
+// {contentStatus: string, refStatus: String ,manualSave: boolean, path: string, refs: [], content: string(yaml),meta: domElement ,screen: domElement, tab: domElement, editor: ToastEditorInstance}
 let tabObjects = new Array(); // This is list of opened tabs's which has a data of yaml string
 
 // VARAIBLE ::: Index that points to the currentTabObject
@@ -39,7 +40,7 @@ const UNSAVEDSYMBOL = "+";
 
 // VARAIBLE ::: COLOR value is based on tailwind-css class names
 const UNDEFINEDCOLOR = "bg-gray-700";
-const HIGHLIGHT ="bg-gray-200";
+const HIGHLIGHT ="bg-gray-300";
 const NORMALBG = "bg-white";
 const OUTDATEDCOLOR = "bg-red-500";
 const UPTODATECOLOR = "bg-blue-500";
@@ -48,22 +49,16 @@ const UPTODATECOLOR = "bg-blue-500";
 const tabMenu = document.querySelector("#openedTabs");
 const sideMenu = document.querySelector('#menuContents');
 const mainDiv = document.querySelector("#main");
-const statusDiv = document.querySelector("#statusBar");
-const refDiv = document.querySelector("#references");
+// const statusDiv = document.querySelector("#statusBar"); // This should be accessed from metaBar
+// const refDiv = document.querySelector("#references");
+const metaBar = document.querySelector("#metaBar");
 const editorScreen = document.querySelector("#editorScreen");
 
 
 // INITIATION ::: Execute multiple initiation operation. 
 // Editorscreen should not be displayed but cloned and then set visible.
+metaBar.style.display = "none";
 editorScreen.style.display = "none";
-// Add drag drop event
-refDiv.addEventListener('dragover', () => {
-	event.preventDefault();
-})
-refDiv.addEventListener('drop', (event) => {
-	event.preventDefault();
-	addRefBtn(event.dataTransfer.getData("text"));
-});
 // Set electron menu and local shortcut for file navigations.
 const menu = new Menu()
 menu.append(new MenuItem({
@@ -94,7 +89,7 @@ document.querySelector("#checker").addEventListener('click', () => {
 	// TODO ::: If unsaved tabObjects exist then return and show dialog that it is not availble;
 	var checkUnsaved = false;
 	tabObjects.forEach((tab) => {
-		if (tab.status === UNSAVED) checkUnsaved = true;
+		if (tab.contentStatus === UNSAVED || tab.refStatus === UNSAVED) checkUnsaved = true;
 	})
 	if ( checkUnsaved ) {
 		alert("Unsaved tab exists cannot check dependencies");
@@ -166,17 +161,20 @@ document.querySelector('#saveFileBtn').addEventListener('click', () => {
 	if (tabObjects.length === 0) return;
 	// Get currentTabObject for easy reading
 	let currentTabObject = tabObjects[currentTabIndex];
-	if(currentTabObject.status !== UNSAVED) return; // if file is not unsaved then skip operation
+	if(currentTabObject.contentStatus !== UNSAVED && currentTabObject.refStatus !== UNSAVED) return; // if file is not unsaved then skip operation
 
 	// Update content body with editor's content
 	currentTabObject.content["body"] = currentTabObject.editor.getMarkdown();
-	// set status to saved because it is getting saved. It is ok to preset status 
-	currentTabObject.status = SAVED;
-
+	currentTabObject.content["reference"] = Array.from(currentTabObject.refs);
 	// If not manualSave directrly save without further procedure
 	if (!currentTabObject.manualSave) {
 		fs.writeFileSync(currentTabObject.path, yaml.safeDump(currentTabObject.content), 'utf8');
 		alert("Saved successfully");
+
+		// set status to saved because it is getting saved. 
+		currentTabObject.contentStatus = SAVED;
+		currentTabObject.refStatus = SAVED;
+		currentTabObject.tab.textContent = path.basename(currentTabObject.path);
 	} 
 	// If manualSave is true then show showSaveDialog to enable user's arbitrary file name.
 	else {
@@ -189,9 +187,15 @@ document.querySelector('#saveFileBtn').addEventListener('click', () => {
 				currentTabObject.manualSave = false;
 				currentTabObject.tab.dataset.path = response.filePath;
 				currentTabObject.path = response.filePath;
+
+				// set status to saved because it is getting saved.
+				currentTabObject.contentStatus = SAVED;
+				currentTabObject.refStatus = SAVED;
+				currentTabObject.tab.textContent = path.basename(currentTabObject.path);
 			}
 		});
 	}
+
 });
 
 // EVENT ::: Open Dialog and set rootDirectory
@@ -241,17 +245,11 @@ function setRootDirectory(directory) {
 		// Reset tabObjects
 		tabObjects.forEach((tabObject) => {
 			tabObject.tab.remove();
+			tabObject.meta.remove();
 			tabObject.screen.remove();
 		});
 		tabObjects = new Array();
 		currentTabIndex = -1;
-
-		// Reset statusdiv's color by removing class from classList
-		statusDiv.classList.remove(OUTDATEDCOLOR);
-		statusDiv.classList.remove(UPTODATECOLOR);
-		statusDiv.classList.remove(UNDEFINEDCOLOR);
-		statusDiv.textContent = "";
-		statusDiv.style.display = "none";
 	} 
 	// If reopening same rootDirectory then check if tabObjects are still valid
 	else {
@@ -260,11 +258,12 @@ function setRootDirectory(directory) {
 			if (!fs.existsSync(tabObject.path)) {
 				// Set status to unsaved
 				// If savefile is called then new file will be created without collision.
-				tabObject.status = UNSAVED;
+				tabObject.contentStatus = UNSAVED;
 				tabObject.tab.textContent = path.basename(tabObject.path) + UNSAVEDSYMBOL;
 			}
 			// File still exists
 			else {
+				// TODO ::: Make this part work with references
 				// If file has changed 
 				// load changed file contents
 				let readContent = yaml.load(fs.readFileSync(tabObject.path));
@@ -272,7 +271,7 @@ function setRootDirectory(directory) {
 				if (readContent !== tabObject.content) {
 					// If editor is unsaved
 					// Set to manualSave so that user can save to another file
-					if (tabObject.status === UNSAVED) {
+					if (tabObject.contentStatus === UNSAVED || tabObject.refStatus === UNSAVED) {
 						tabObject.manualSave = true;
 						tabObject.tab.textContent = path.basename(tabObject.path) + UNSAVEDSYMBOL;
 					} 
@@ -281,6 +280,15 @@ function setRootDirectory(directory) {
 					else {
 						tabObject.content = readContent;
 						tabObject.editor.setMarkdown(readContent["body"], false);
+
+						// TODO ::: Get References from list
+						readContent["reference"].forEach((ref) => {
+							if (!tabObject.refs.has(ref)) {
+								addRefBtn(ref, true);
+							}
+						});
+
+						tabObject.refs = new Set(readContent["reference"]);
 					}
 				}
 			}
@@ -336,21 +344,19 @@ function listMenuButtons(root, files, parentElement) {
 	// TODO ::: This should be handled as a proper config settings.
 	// Do not show hidden files (files which names start with dot.)
 	//files = files.filter(item => !(/(^|\/)\.[^/.]/g).test(item)); // copy pasted code
-	//
-	// Make root directory 
+	
+	// Directory is shown first and files are shown later.
+	let dirsArray = files.filter(file => fs.lstatSync(path.join(root, file)).isDirectory());
+	let filesArray = files.filter(file => !fs.lstatSync(path.join(root, file)).isDirectory());
 
-	// Iterate over read files from directory
-	files.forEach(function (file) {
-		let fullPath = path.join(root, file);
-		// if file is gdml file then make file button
-		if (path.extname(fullPath).toLowerCase() === ".gdml") {
-			listFile(root, file, parentElement);
+	dirsArray.forEach((file) => {
+		listDirectory(root, path.basename(file), parentElement);
+	})
+	filesArray.forEach((file) => {
+		if (path.extname(file).toLowerCase() === ".gdml") {
+			listFile(root, path.basename(file), parentElement);
 		} 
-		// if file is directory then make directory button 
-		else if (fs.lstatSync(fullPath).isDirectory()) {
-			listDirectory(root, file, parentElement);
-		}
-	});
+	})
 }
 
 // FUNCTION ::: Create File menu button
@@ -433,12 +439,11 @@ function loadGdmlToEditor(event) {
 		currentTabIndex = tabIndex;
 		// And show selected tab
 		tabObjects[currentTabIndex].screen.style.display = "";
+		tabObjects[currentTabIndex].meta.style.display = "";
 		tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
 		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
 		// Update Status Bar
 		statusGraphics(tabObjects[currentTabIndex].content["status"]);
-		// TODO ::: COMPLETE THIS
-		listReferences();
 		return;
 	}
 
@@ -449,14 +454,17 @@ function loadGdmlToEditor(event) {
 	} // else if tab is not opened at all don't have to hide anything.
 
 
-	// If not tab is open, then read file and paset data into newly created editor. 
+	// If not tab is open, then read file and paste data into newly created editor. 
 	fs.readFile(filePath, 'utf8', (err, data) => {
 		if (err) {
 			alert("Failed to read file");
 			return;
 		}
+		let metaElem = metaBar.cloneNode(true);
 		let editorScreenElem = editorScreen.cloneNode(true);
+		mainDiv.appendChild(metaElem);
 		mainDiv.appendChild(editorScreenElem);
+		metaElem.style.display = "";
 		editorScreenElem.style.display = "";
 
 		// Make currentTabIndex to be same as length minus 1 which is 
@@ -464,22 +472,23 @@ function loadGdmlToEditor(event) {
 		// CurrentTab Index should be equal to length because in this line length is not added by 1.
 		currentTabIndex = tabObjects.length;
 		let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
-		var tabObject = {status: SAVED, manualSave: false, path: filePath, content: yaml.load(data), screen: editorScreenElem, tab: null, editor: editorInstance};
+		var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: false, path: filePath, ref: new Set() ,content: yaml.load(data), meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
 		tabObjects.push(tabObject);
 
 		editorInstance.setMarkdown(tabObject.content["body"], false);
-
 		// If editor's content changes and content is different from original one
 		// then set status to unsaved.
 		// Also change tab's name to somewhat distinguishable.
 		editorInstance.on("change", () => {
 			let currentTab = tabObjects[currentTabIndex];
 			if (currentTab.content["body"] !== currentTab.editor.getMarkdown()) {
-				currentTab.status = UNSAVED;
+				currentTab.contentStatus = UNSAVED;
 				currentTab.tab.textContent = path.basename(currentTab.path) + UNSAVEDSYMBOL;
 			} else { // both contents are same
-				currentTab.status = SAVED;
-				currentTab.tab.textContent = path.basename(currentTab.path);
+				currentTab.contentStatus = SAVED;
+				if (currentTab.refStatus === SAVED) {
+					currentTab.tab.textContent = path.basename(currentTab.path);
+				}
 			}
 		});
 
@@ -487,15 +496,23 @@ function loadGdmlToEditor(event) {
 		let newTab = addNewTab(filePath);
 		tabObject.tab = newTab;
 
-		// TODO ::: Make this work 
-		// referenceDiv.style.display= "";
-		statusDiv.style.display = "";
+		// Set highlight color
 		tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
 		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
 
+		// set status graphic
 		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 		// TODO ::: COMPLETE THIS
 		listReferences();
+		
+		//let refDiv = metaElem.querySelector("#references");
+		// Add drag drop event to references
+		metaElem.addEventListener('dragover', (event) => {
+			event.preventDefault();
+		});
+		metaElem.addEventListener('drop', (event) => {
+			addRefBtn(event.dataTransfer.getData("text"), false);
+		});
 	});
 }
 
@@ -539,15 +556,15 @@ function addNewTab(filePath) {
 	return btnElem;
 }
 
+// TODO ::: Warn if unsaved content exists.
 function closeTab() {
 	let currentTabObject = tabObjects[currentTabIndex];
 	currentTabObject.tab.parentElement.remove();
 	currentTabObject.screen.remove();
-	removeRef();
+	currentTabObject.meta.remove();
 
 	// Delete tabObject from array
 	tabObjects.splice(currentTabIndex, 1);
-	statusDiv.style.display="none";
 
 	// if other tabs are exsiting
 	if (tabObjects.length !== 0) {
@@ -556,14 +573,11 @@ function closeTab() {
 		}
 		// Show prior tab
 		tabObjects[currentTabIndex].screen.style.display = "";
+		tabObjects[currentTabIndex].meta.style.display = "";
 		tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
 		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
-		// Update Status Bar
-		statusDiv.style.display="block";
 
 		statusGraphics(tabObjects[currentTabIndex].content["status"]);
-		// TODO ::: COMPLETE THIS
-		listReferences();
 	} 
 	// Tab object's length is 0 so reset tabIndex to -1
 	else {
@@ -607,6 +621,7 @@ function initEditor(newId, element) {
 
 // FUNCTION ::: Apply Status graphical effect
 function statusGraphics(statusString) {
+	let statusDiv = tabObjects[currentTabIndex].meta.querySelector("#statusBar");
 	if( statusString === "UPTODATE" ) {
 		statusDiv.textContent = "Up to date";
 		statusDiv.classList.remove(UNDEFINEDCOLOR);
@@ -629,13 +644,27 @@ function statusGraphics(statusString) {
 function listReferences() {
 	// get list of referecnes from the tabObject 
 	let references = tabObjects[currentTabIndex].content["reference"]; // This is array
+	tabObjects[currentTabIndex].refs = new Set(references); // TODO ::: THis might be buggy
 
 	references.forEach((ref) => {
-		addRefBtn(ref);
+		addRefBtn(ref, true);
 	});
 }
 
-function addRefBtn(fileName) {
+function addRefBtn(fileName, listing) {
+	let currentTabObject = tabObjects[currentTabIndex];
+
+	// If listing is not true then it is adding what is not read from file
+	if (!listing) {
+		// if reference already exists then ignore.
+		if (currentTabObject.refs.has(fileName)) return;
+		// make unsaved
+		currentTabObject.refStatus = UNSAVED;
+		currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
+		currentTabObject.refs.add(fileName);
+	}
+
+	let divElem = document.createElement('div');
 	var elem = document.createElement('button');
 	let filePath = fileName;
 
@@ -643,27 +672,52 @@ function addRefBtn(fileName) {
 	let menuColor = UNDEFINEDCOLOR; // Undefined color
 	if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
 	else menuColor = UPTODATECOLOR;
+	divElem.classList.add("blankButton", menuColor);
 
 	elem.textContent = path.basename(filePath);
 	elem.dataset.path = filePath;
 	elem.addEventListener('click', loadGdmlToEditor);
-	elem.classList.add("blankButton", menuColor, "mx-2");
-	refDiv.appendChild(elem);
+	elem.classList.add("font-semibold");
+
+	// TODO :: Make close button
+	let closeButton = document.createElement('button');
+	let iconElement = document.createElement('i');
+	iconElement.classList.add("fas", "fa-times", "pl-1");
+	closeButton.addEventListener('click', (event) => {
+		// Get parent target and close
+		// Also stop propagation so that clicking parent button should not be triggered.
+		// Remove reference from currentTabObject's references
+		// if removed version is equal to read value then set to SAVED
+		let currentTabObject =tabObjects[currentTabIndex];
+		console.log("Before deletion");
+		console.log(currentTabObject.refs);
+		let refValue = event.currentTarget.previousSibling.dataset.path;
+		console.log("Trying to delete" + refValue);
+		currentTabObject.refs.delete(refValue);
+		if (_.isEqual(new Set(currentTabObject.content["reference"]), currentTabObject.refs)) {
+			currentTabObject.refStatus = SAVED;
+			if (currentTabObject.contentStatus === SAVED) {
+				currentTabObject.tab.textContent = path.basename(currentTabObject.path);
+			}
+		} else {
+			currentTabObject.status = UNSAVED;
+			currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
+		}
+		event.currentTarget.parentElement.remove();
+		event.stopPropagation();
+	});
+
+	closeButton.append(iconElement);
+	divElem.appendChild(elem);
+	divElem.appendChild(closeButton);
+	currentTabObject.meta.querySelector("#references").appendChild(divElem);
 }
 
 // TODO ::: Make this work
 function hideCurrentTab() {
 	// Hide screen and toggle color of tab Object
 	tabObjects[currentTabIndex].screen.style.display = "none";
+	tabObjects[currentTabIndex].meta.style.display = "none";
 	tabObjects[currentTabIndex].tab.parentElement.classList.remove(HIGHLIGHT);
 	tabObjects[currentTabIndex].tab.parentElement.classList.add(NORMALBG);
-
-	// Remove all ref Div's child elements
-	removeRef();
-}
-
-function removeRef() {
-	while(refDiv.firstChild) {
-		refDiv.removeChild(refDiv.firstChild);
-	}
 }

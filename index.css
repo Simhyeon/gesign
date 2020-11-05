@@ -15,9 +15,9 @@ html, body {
 .blankButton {
 	@apply text-gray-800 font-semibold py-1 px-2 border border-gray-400 rounded shadow;
 }
-.blankButton:hover {
-	@apply bg-gray-200;
-}
+/*.blankButton:hover {*/
+	/*@apply bg-gray-200;*/
+/*}*/
 
 button:focus {
 	@apply outline-none;

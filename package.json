@@ -19,6 +19,7 @@
     "codemirror": "^5.58.2",
     "electron": "^10.1.5",
     "js-yaml": "^3.14.0",
+    "lodash": "^4.17.20",
     "node-watch": "^0.7.0"
   }
 }
