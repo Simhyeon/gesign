@@ -79,10 +79,10 @@ module.exports = {
 			let nonExistingChildren = new Array();
 
 			// Has children
-			if (targetNode.childrenList.size !== 0) {
+			if (targetNode.childrenSet.size !== 0) {
 				var childrenCache = new Array();
 				// Find if children is preexisting or not
-				targetNode.childrenList.forEach((item) => {
+				targetNode.childrenSet.forEach((item) => {
 					// Child node exists
 					var childNode = this.getNode(item);
 					if(childNode !== null) {
@@ -148,10 +148,11 @@ module.exports = {
 		// If recursive reference detected throw exception 
 		recursiveInc(startNodeName, nodeObject) {
 			nodeObject.level++;
-			Array.from(nodeObject.parentList).forEach((parentName) => {
+			Array.from(nodeObject.parentSet).forEach((parentName) => {
 				let parentNode = this.getNode(parentName);
+				// Mututal reference detected throw file name to caller
 				if (parentNode.value === startNodeName) {
-					throw new Error("Mutual reference detected.");
+					throw new Error(startNodeName + " is referencing itself.");
 				}
 
 				this.recursiveInc(startNodeName, parentNode);
@@ -181,22 +182,28 @@ module.exports = {
 		// FUNCTION ::: Check dependencies and return status list(array) according to dependencies' timestamps and status
 		checkDependencies(values) {
 			values.forEach((item) => {
+				console.log("Checking file ->");
+				console.log(item);
 				// if no children then set UPTODATE
-				if (item.childrenList.size === 0) {
-					console.log("Up to date");
+				if (item.childrenSet.size === 0) {
 					item.status = UPTODATE;
 				} 
 				// if has children compare timestmamps
 				else {
-					var isOutdated = Array.from(item.childrenList).some((child) => {
-						let node = this.getNode(child); // this should not be null becuase childrenList is added from real Node.
+					var isOutdated = Array.from(item.childrenSet).some((child) => {
+						let node = this.getNode(child); // this should not be null becuase childrenSet is added from real Node.
 						return (node.status == OUTDATED || item.lastModified.getTime() < node.lastModified.getTime());
 					});
 					if (isOutdated) item.status = OUTDATED;
 					else item.status = UPTODATE;
-					console.log("Result status is : " + item.status);
 				}
+
+				console.log("after check");
+				console.log(item);
 			});
+
+			console.log("List after checking");
+			console.log(values);
 		}
 
 		// FUNCTION ::: Get Level sorted list from map's values

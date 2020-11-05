@@ -1,7 +1,8 @@
 'use strict';
 
 /// HEADER ::: import necessary packages.
-const { remote } = require('electron');
+const {remote} = require('electron');
+const {Menu, MenuItem} = remote;
 const path = require('path');
 const fs = require('fs');
 const yaml = require('js-yaml');
@@ -14,7 +15,7 @@ let watcher = null;
 let checker = new Checker();
 
 // VARAIBLE ::: Root direoctry given by user as a root for recursive file detection.
-let rootDirectory;
+let rootDirectory = null;
 // VARAIBLE ::: Total list of gdml files's object 
 // {path : string, status: string}
 let totalGdmlList = new Array();
@@ -33,7 +34,10 @@ const OUTDATED = "OUTDATED";
 const UPTODATE = "UPTODATE";
 const UNSAVED ="UNSAVED";
 const SAVED ="SAVED";
-// COLOR value is based on tailwind-css class names
+
+const UNSAVEDSYMBOL = "+";
+
+// VARAIBLE ::: COLOR value is based on tailwind-css class names
 const UNDEFINEDCOLOR = "bg-gray-700";
 const HIGHLIGHT ="bg-gray-200";
 const NORMALBG = "bg-white";
@@ -49,8 +53,32 @@ const refDiv = document.querySelector("#references");
 const editorScreen = document.querySelector("#editorScreen");
 editorScreen.style.display = "none";
 
+// INITIATION ::: Set electron menu and local shortcut for file navigations.
+const menu = new Menu()
+menu.append(new MenuItem({
+  label: 'File',
+  submenu: [{
+    label: 'Open Directory',
+    accelerator: process.platform === 'darwin' ? 'Cmd+O' : 'Control+O',
+    click: () => { document.querySelector("#openDirBtn").click(); }
+  },{
+    label: 'Save File',
+    accelerator: process.platform === 'darwin' ? 'Cmd+S' : 'Control+S',
+    click: () => { document.querySelector("#saveFileBtn").click(); }
+  },{
+    label: 'Check dependencies',
+    accelerator: process.platform === 'darwin' ? 'Cmd+R' : 'Control+R',
+    click: () => { document.querySelector("#checker").click(); }
+  }
+  ]
+}))
+Menu.setApplicationMenu(menu)
+
 // EVENT ::: Make Checker object and add all gdml documents as NodeInstance to checkerinstance
 document.querySelector("#checker").addEventListener('click', () => {
+
+	if (rootDirectory === null) return;
+
 	// If unsaved tab exists dependency check cannot happen
 	// TODO ::: If unsaved tabObjects exist then return and show dialog that it is not availble;
 	var checkUnsaved = false;
@@ -63,30 +91,53 @@ document.querySelector("#checker").addEventListener('click', () => {
 	}
 
 	// Make NodeObject from totalGdmlList's item's
-	totalGdmlList.forEach((object) => {
-		let gdml = loadGdml(object.path);
+	for (var i = 0, len = totalGdmlList.length; i < len; i++) {
+		let gdml = loadGdml(totalGdmlList[i].path);
 		if (gdml == null) {
 			console.error("GDML IS null;");
 			return;
 		}
-		checker.addNode(object.path, gdml["reference"]);
-	})
+		try {
+			checker.addNode(totalGdmlList[i].path, gdml["reference"]);
+		} catch (e) {
+			alert("Mutual reference detected from file.\n" + e);
+			return;
+		}
+	}
 
 	let checkerList = checker.getLevelSortedList();
 	checker.checkDependencies(checkerList);
 
+	console.log("Given list");
+	console.log(checkerList);
 	// Sort both checkerList and totlaGdmlList by path(value).
 	// Order is not important, becuase two list will always have same list of paths. 
 	totalGdmlList.sort((a,b) => {
-		return a-b;	
+		if ( a.path < b.path ){
+			return -1;
+		}
+		if ( a.path > b.path ){
+			return 1;
+		}
+		return 0;
 	});
 	checkerList.sort((a,b) => {
-		return a-b;
+		if ( a.value < b.value ){
+			return -1;
+		}
+		if ( a.value > b.value ){
+			return 1;
+		}
+		return 0;
 	});
 
 	// TODO ::: Should change statuses of menu buttons 
 	// Should change statues of opened tabs
 	for (var i = 0, len = totalGdmlList.length; i < len; i++) {
+		console.log("Checking  ----- ");
+		console.log(totalGdmlList[i]);
+		console.log("With ----- ");
+		console.log(checkerList[i]);
 		// If Status has changed after dependency check, apply changes to file
 		// With this approcah caching(memory usage) is minified and I/O is maximized.
 		if (totalGdmlList[i].status !== checkerList[i].status) {
@@ -100,6 +151,8 @@ document.querySelector("#checker").addEventListener('click', () => {
 
 // EVENT ::: Save markdown of tabObject into the file which path is associated with tabObject.
 document.querySelector('#saveFileBtn').addEventListener('click', () => {
+	// if there is tab to save then return;
+	if (tabObjects.length === 0) return;
 	// Get currentTabObject for easy reading
 	let currentTabObject = tabObjects[currentTabIndex];
 	if(currentTabObject.status !== UNSAVED) return; // if file is not unsaved then skip operation
@@ -197,7 +250,7 @@ function setRootDirectory(directory) {
 				// Set status to unsaved
 				// If savefile is called then new file will be created without collision.
 				tabObject.status = UNSAVED;
-				tabObject.tab.textContent = path.basename(tabObject.path) + "*";
+				tabObject.tab.textContent = path.basename(tabObject.path) + UNSAVEDSYMBOL;
 			}
 			// File still exists
 			else {
@@ -210,7 +263,7 @@ function setRootDirectory(directory) {
 					// Set to manualSave so that user can save to another file
 					if (tabObject.status === UNSAVED) {
 						tabObject.manualSave = true;
-						tabObject.tab.textContent = path.basename(tabObject.path) + "*";
+						tabObject.tab.textContent = path.basename(tabObject.path) + UNSAVEDSYMBOL;
 					} 
 					// If editor content is not "unsaved"
 					// just copy file contents to editor
@@ -241,6 +294,26 @@ function setRootDirectory(directory) {
 		}
 	});
 }
+
+// SOURCE ::: https://stackoverflow.com/questions/12997123/print-specific-part-of-webpage/#answer-12997207
+// FUNCTION ::: Print editor content into file
+document.querySelector("#printBtn").addEventListener('click', (event) => {
+	if (currentTabIndex === -1) return; // if there is no file to print then return.
+	tabObjects[currentTabIndex].editor.changeMode('wysiwyg');
+	let editorHtml = tabObjects[currentTabIndex].screen.querySelector(".te-editor-section").outerHTML;
+	let WinPrint = window.open('', 'modal', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
+	WinPrint.document.write(editorHtml);
+	WinPrint.document.write('<link rel="stylesheet" href="node_modules/codemirror/lib/codemirror.css"/><link rel="stylesheet" href="node_modules/@toast-ui/editor/dist/toastui-editor.css"/><link rel="stylesheet" href="styles.css" type="text/css" media="screen" title="no title" charset="utf-8">');
+	//WinPrint.document.write('<link rel="stylesheet" href="node_modules/@toast-ui/editor/dist/toastui-editor.css"/>');
+	//WinPrint.document.write('<link rel="stylesheet" href="styles.css" type="text/css" media="screen" title="no title" charset="utf-8">');
+	WinPrint.document.close();
+	// Content is not rendered immediately so waiting is required.
+	WinPrint.setTimeout(function(){
+      WinPrint.focus();
+      WinPrint.print();
+      WinPrint.close();
+    }, 1000);
+});
 
 // TODO ::: Make children hierarchy better not just nested.
 // Add separator, Indentation might be good but it will make 
@@ -335,9 +408,7 @@ function loadGdmlToEditor(event) {
 	// If file is already open thus tab exists
 	if(tabIndex !== -1){
 		// Hide current tab
-		tabObjects[currentTabIndex].screen.style.display = "none";
-		tabObjects[currentTabIndex].tab.parentElement.classList.remove(HIGHLIGHT);
-		tabObjects[currentTabIndex].tab.parentElement.classList.add(NORMALBG);
+		hideCurrentTab();
 
 		// Change currentTabIndex
 		currentTabIndex = tabIndex;
@@ -355,10 +426,8 @@ function loadGdmlToEditor(event) {
 	// When tab is opened and user is trying to open another tab with another file
 	// Hide currently visible tab.
 	if(currentTabIndex != -1) {
-		tabObjects[currentTabIndex].screen.style.display = "none";
-		tabObjects[currentTabIndex].tab.parentElement.classList.remove(HIGHLIGHT);
-		tabObjects[currentTabIndex].tab.parentElement.classList.add(NORMALBG);
-	}
+		hideCurrentTab();
+	} // else if tab is not opened at all don't have to hide anything.
 
 
 	// If not tab is open, then read file and paset data into newly created editor. 
@@ -383,12 +452,12 @@ function loadGdmlToEditor(event) {
 
 		// If editor's content changes and content is different from original one
 		// then set status to unsaved.
-		// Also change tab's name to distinguishing.
+		// Also change tab's name to somewhat distinguishable.
 		editorInstance.on("change", () => {
 			let currentTab = tabObjects[currentTabIndex];
 			if (currentTab.content["body"] !== currentTab.editor.getMarkdown()) {
 				currentTab.status = UNSAVED;
-				currentTab.tab.textContent = path.basename(currentTab.path) + "*";
+				currentTab.tab.textContent = path.basename(currentTab.path) + UNSAVEDSYMBOL;
 			} else { // both contents are same
 				currentTab.status = SAVED;
 				currentTab.tab.textContent = path.basename(currentTab.path);
@@ -404,9 +473,10 @@ function loadGdmlToEditor(event) {
 		statusDiv.style.display = "";
 		tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
 		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
+
+		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 		// TODO ::: COMPLETE THIS
 		listReferences();
-		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 	});
 }
 
@@ -454,11 +524,11 @@ function closeTab() {
 	let currentTabObject = tabObjects[currentTabIndex];
 	currentTabObject.tab.parentElement.remove();
 	currentTabObject.screen.remove();
+	removeRef();
 
 	// Delete tabObject from array
 	tabObjects.splice(currentTabIndex, 1);
 	statusDiv.style.display="none";
-	// decrement index
 
 	// if other tabs are exsiting
 	if (tabObjects.length !== 0) {
@@ -471,9 +541,10 @@ function closeTab() {
 		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
 		// Update Status Bar
 		statusDiv.style.display="block";
+
+		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 		// TODO ::: COMPLETE THIS
 		listReferences();
-		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 	} 
 	// Tab object's length is 0 so reset tabIndex to -1
 	else {
@@ -537,24 +608,39 @@ function statusGraphics(statusString) {
 
 // TODO ::: MAke this work
 function listReferences() {
-	let currentTabObject = tabObjects[currentTabIndex];
-	let references = tabObjects[currentTabIndex].content["refernce"]; // This is array
+	// get list of referecnes from the tabObject 
+	let references = tabObjects[currentTabIndex].content["reference"]; // This is array
+
 	references.forEach((ref) => {
 		var elem = document.createElement('button');
+		let filePath = ref;
 
-		let fullPath = path.join(root , fileName);
-		let fileYaml = yaml.load(fs.readFileSync(fullPath)); // this should not fail becuase it was read from readdirSync
+		let fileYaml = yaml.load(fs.readFileSync(ref)); // this should not fail becuase it was read from readdirSync
 		let menuColor = UNDEFINEDCOLOR; // Undefined color
 		if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
 		else menuColor = UPTODATECOLOR;
 
-		elem.textContent = fileName;
-		elem.dataset.path = fullPath;
+		elem.textContent = path.basename(filePath);
+		elem.dataset.path = filePath;
 		elem.addEventListener('click', loadGdmlToEditor);
-		elem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "m-2");
-		parentElement.appendChild(elem);
-		// Add value to array(list) so that dependency checker can do his job.
-		totalGdmlList.push({ path: fullPath, status: fileYaml["status"]});
+		elem.classList.add("blankButton", menuColor, "mx-2", "w-full");
+		refDiv.appendChild(elem);
 	});
-	// Get List of references and make button element and finally add event listener loadGdmlToEditor to it. 
+}
+
+// TODO ::: Make this work
+function hideCurrentTab() {
+	// Hide screen and toggle color of tab Object
+	tabObjects[currentTabIndex].screen.style.display = "none";
+	tabObjects[currentTabIndex].tab.parentElement.classList.remove(HIGHLIGHT);
+	tabObjects[currentTabIndex].tab.parentElement.classList.add(NORMALBG);
+
+	// Remove all ref Div's child elements
+	removeRef();
+}
+
+function removeRef() {
+	while(refDiv.firstChild) {
+		refDiv.removeChild(refDiv.firstChild);
+	}
 }

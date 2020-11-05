@@ -51,18 +51,22 @@
 2 Make comments for all functions and variables
 -> Done
 
-3 Add aesthetics
+3 Add aesthetics => Partially done -> There is no such 'done' in graphic design... which sucks
 	-> Make sidenav always visible and move all buttons inside of navMenu
 	-> Make status bar and tab buttons go with current toastuieditor (or find what toastuieditor has used. There must be a referecnes).
 
-4. Enable drag and drop for references -> There is no such done in graphic design... which sucks
+4. Enable drag and drop for references + Able to input reference by hand
     -> Show references to upper part of editor.
 	-> Only add to temporary content apply when save button is clicked.
 	=> Somewhat satisfied going to lext step
 
+4.5 Maybe depdencies checker glitch exists... check why no children document is set as outdated. => Done
+	-> This should be set as updated.
+	-> was because I was sorting as if it was a number 
+
 5. Ergonoic boost
-	-> Display references inside of status bars
-		-> Show which reference document is outdated.
+	-> Display references inside of status bars => Done
+		-> Show which reference document is outdated. => Done
 	-> Display close button next to tab menu => Done
 	-> Display root directory on top of side menu => Done
 	-> Change direcotory naming when toggleing => Done
@@ -70,11 +74,22 @@
 	-> Make help text on hover icon buttons. => Done... but somewhat not perfect.
 
 5. Notify which file is in mutual references error and make mutual refernce exception visible to end users.
+	=> Done
 
-6. Make accelerator(Shortcut key of electron) work with button actions
+6. Make accelerator(Shortcut key of electron) work with button actions => Done  => Acutally somewhat wrong
+	(kinda confusing at first time, but remote made a thing like a breeze.)
+	=> I set globalshorcut not local shortcut.
+	=> Not done really!!
 
-7. Export to pdf option.
+7. Export to pdf option.  => F* this shit... priting ti pdf is much lightweight and even dpi high... wth??
+
+7.7 Print button => Partial Done
+	-> However it will markdown in markdown mode => Just made it to switch to wysiwyg mode.
 
 #. Make config file 
 
 #. Maybe add markdown file support for temporary file before saving into gdml file
+
+#. Custom markdown css rules? => Not necessary but would be fun to use yet hard to implement.
+
+#. Maybe open recent directory.

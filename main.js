@@ -2,7 +2,7 @@ const electron = require("electron");
 const path = require("path");
 const url = require("url");
 
-const {app, BrowserWindow, protocol} = require("electron");
+const {app, BrowserWindow, protocol, globalShortcut} = require("electron");
 const {dialog} = require('electron');
 
 let win;
@@ -12,7 +12,8 @@ let win;
 function createWindow() {
 	win = new BrowserWindow({minWidth: 800, minHeight: 500, webPreferences: {
 		nodeIntegration: true,
-		enableRemoteModule: true
+		enableRemoteModule: true,
+		nativeWindowOpen: true
 	}});
 
 	win.loadURL(url.format({
