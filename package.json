@@ -1,0 +1,24 @@
+{
+  "name": "gesign",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "^7.12.1",
+    "tailwind": "^4.0.0"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.15.1",
+    "@toast-ui/editor": "^2.5.0",
+    "codemirror": "^5.58.2",
+    "electron": "^10.1.5",
+    "js-yaml": "^3.14.0",
+    "node-watch": "^0.7.0"
+  }
+}
