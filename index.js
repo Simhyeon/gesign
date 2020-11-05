@@ -51,9 +51,20 @@ const mainDiv = document.querySelector("#main");
 const statusDiv = document.querySelector("#statusBar");
 const refDiv = document.querySelector("#references");
 const editorScreen = document.querySelector("#editorScreen");
-editorScreen.style.display = "none";
 
-// INITIATION ::: Set electron menu and local shortcut for file navigations.
+
+// INITIATION ::: Execute multiple initiation operation. 
+// Editorscreen should not be displayed but cloned and then set visible.
+editorScreen.style.display = "none";
+// Add drag drop event
+refDiv.addEventListener('dragover', () => {
+	event.preventDefault();
+})
+refDiv.addEventListener('drop', (event) => {
+	event.preventDefault();
+	addRefBtn(event.dataTransfer.getData("text"));
+});
+// Set electron menu and local shortcut for file navigations.
 const menu = new Menu()
 menu.append(new MenuItem({
   label: 'File',
@@ -355,7 +366,15 @@ function listFile(root, fileName, parentElement) {
 	elem.textContent = fileName;
 	elem.dataset.path = fullPath;
 	elem.addEventListener('click', loadGdmlToEditor);
+
+	elem.addEventListener("dragstart", (event) => {
+		// store a ref. on the dragged elem
+		// didn't use dataTransfer because 
+		event.dataTransfer.setData('text/plain', event.currentTarget.dataset.path);
+	});
+
 	elem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "m-2");
+	elem.draggable = true;
 	parentElement.appendChild(elem);
 	// Add value to array(list) so that dependency checker can do his job.
 	totalGdmlList.push({ path: fullPath, status: fileYaml["status"]});
@@ -612,20 +631,24 @@ function listReferences() {
 	let references = tabObjects[currentTabIndex].content["reference"]; // This is array
 
 	references.forEach((ref) => {
-		var elem = document.createElement('button');
-		let filePath = ref;
-
-		let fileYaml = yaml.load(fs.readFileSync(ref)); // this should not fail becuase it was read from readdirSync
-		let menuColor = UNDEFINEDCOLOR; // Undefined color
-		if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
-		else menuColor = UPTODATECOLOR;
-
-		elem.textContent = path.basename(filePath);
-		elem.dataset.path = filePath;
-		elem.addEventListener('click', loadGdmlToEditor);
-		elem.classList.add("blankButton", menuColor, "mx-2", "w-full");
-		refDiv.appendChild(elem);
+		addRefBtn(ref);
 	});
+}
+
+function addRefBtn(fileName) {
+	var elem = document.createElement('button');
+	let filePath = fileName;
+
+	let fileYaml = yaml.load(fs.readFileSync(filePath)); // this should not fail becuase it was read from readdirSync
+	let menuColor = UNDEFINEDCOLOR; // Undefined color
+	if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
+	else menuColor = UPTODATECOLOR;
+
+	elem.textContent = path.basename(filePath);
+	elem.dataset.path = filePath;
+	elem.addEventListener('click', loadGdmlToEditor);
+	elem.classList.add("blankButton", menuColor, "mx-2");
+	refDiv.appendChild(elem);
 }
 
 // TODO ::: Make this work

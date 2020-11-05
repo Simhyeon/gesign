@@ -48,23 +48,23 @@
 ### Keep in mind this milestone
 -> Reading sysroot calls should check dependencies before user interaction. or shouldn't?
 
-2 Make comments for all functions and variables
+!2 Make comments for all functions and variables
 -> Done
 
-3 Add aesthetics => Partially done -> There is no such 'done' in graphic design... which sucks
+!3 Add aesthetics => Partially done -> There is no such 'done' in graphic design... which sucks
 	-> Make sidenav always visible and move all buttons inside of navMenu
 	-> Make status bar and tab buttons go with current toastuieditor (or find what toastuieditor has used. There must be a referecnes).
 
 4. Enable drag and drop for references + Able to input reference by hand
     -> Show references to upper part of editor.
+	-> Make refDiv consistant over tabs
 	-> Only add to temporary content apply when save button is clicked.
-	=> Somewhat satisfied going to lext step
 
-4.5 Maybe depdencies checker glitch exists... check why no children document is set as outdated. => Done
+!4.5 Maybe depdencies checker glitch exists... check why no children document is set as outdated. => Done
 	-> This should be set as updated.
 	-> was because I was sorting as if it was a number 
 
-5. Ergonoic boost
+!5. Ergonoic boost
 	-> Display references inside of status bars => Done
 		-> Show which reference document is outdated. => Done
 	-> Display close button next to tab menu => Done
@@ -73,17 +73,17 @@
 	-> Show basic direction(like click the open directory button to start the jobs text is displayed on startup screen) => Done
 	-> Make help text on hover icon buttons. => Done... but somewhat not perfect.
 
-5. Notify which file is in mutual references error and make mutual refernce exception visible to end users.
+!5. Notify which file is in mutual references error and make mutual refernce exception visible to end users.
 	=> Done
 
-6. Make accelerator(Shortcut key of electron) work with button actions => Done  => Acutally somewhat wrong
+!6. Make accelerator(Shortcut key of electron) work with button actions => Done  => Acutally somewhat wrong
 	(kinda confusing at first time, but remote made a thing like a breeze.)
 	=> I set globalshorcut not local shortcut.
 	=> Not done really!!
 
-7. Export to pdf option.  => F* this shit... priting ti pdf is much lightweight and even dpi high... wth??
+X7. Export to pdf option.  => F* this shit... priting ti pdf is much lightweight and even dpi high... wth??
 
-7.7 Print button => Partial Done
+!7.7 Print button => Partial Done
 	-> However it will markdown in markdown mode => Just made it to switch to wysiwyg mode.
 
 #. Make config file 

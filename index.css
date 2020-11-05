@@ -55,3 +55,10 @@ button:focus {
   visibility: visible;
   opacity: 1;
 }
+
+/*This disables height of scrollbar while scrolling possible*/
+/*However this is only possible in webkit based browser, namely chrome and safari*/
+/*This is fine because electron is chrome based*/
+::-webkit-scrollbar {
+	height: 0 !important;
+}
