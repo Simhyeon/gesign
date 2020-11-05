@@ -65,15 +65,15 @@ menu.append(new MenuItem({
   label: 'File',
   submenu: [{
     label: 'Open Directory',
-    accelerator: process.platform === 'darwin' ? 'Cmd+O' : 'Control+O',
+    accelerator: process.platform === 'darwin' ? 'Cmd+Shift+O' : 'Control+Shift+O',
     click: () => { document.querySelector("#openDirBtn").click(); }
   },{
     label: 'Save File',
-    accelerator: process.platform === 'darwin' ? 'Cmd+S' : 'Control+S',
+    accelerator: process.platform === 'darwin' ? 'Cmd+Shift+S' : 'Control+Shift+S',
     click: () => { document.querySelector("#saveFileBtn").click(); }
   },{
     label: 'Check dependencies',
-    accelerator: process.platform === 'darwin' ? 'Cmd+R' : 'Control+R',
+    accelerator: process.platform === 'darwin' ? 'Cmd+Shift+R' : 'Control+Shift+R',
     click: () => { document.querySelector("#checker").click(); }
   }
   ]
@@ -114,8 +114,6 @@ document.querySelector("#checker").addEventListener('click', () => {
 	let checkerList = checker.getLevelSortedList();
 	checker.checkDependencies(checkerList);
 
-	console.log("Given list");
-	console.log(checkerList);
 	// Sort both checkerList and totlaGdmlList by path(value).
 	// Order is not important, becuase two list will always have same list of paths. 
 	totalGdmlList.sort((a,b) => {
@@ -137,19 +135,21 @@ document.querySelector("#checker").addEventListener('click', () => {
 		return 0;
 	});
 
+	//console.log(JSON.parse(JSON.stringify(totalGdmlList)));
+	//console.log(JSON.parse(JSON.stringify(checkerList)));
 	// TODO ::: Should change statuses of menu buttons 
 	// Should change statues of opened tabs
-	for (var i = 0, len = totalGdmlList.length; i < len; i++) {
-		console.log("Checking  ----- ");
-		console.log(totalGdmlList[i]);
-		console.log("With ----- ");
-		console.log(checkerList[i]);
+	for (var j = 0, leng = totalGdmlList.length; j < leng; j++) {
+		//console.log("Checking  ----- ");
+		//console.log(totalGdmlList[i]);
+		//console.log("With ----- ");
+		//console.log(checkerList[i]);
 		// If Status has changed after dependency check, apply changes to file
 		// With this approcah caching(memory usage) is minified and I/O is maximized.
-		if (totalGdmlList[i].status !== checkerList[i].status) {
-			let readFile = yaml.load(fs.readFileSync(totalGdmlList[i].path));
-			readFile["status"] = checkerList[i].status;
-			fs.writeFileSync(totalGdmlList[i].path, yaml.safeDump(readFile), 'utf8');
+		if (totalGdmlList[j].status !== checkerList[j].status) {
+			let readFile = yaml.load(fs.readFileSync(totalGdmlList[j].path));
+			readFile["status"] = checkerList[j].status;
+			fs.writeFileSync(totalGdmlList[j].path, yaml.safeDump(readFile), 'utf8');
 		}
 	}
 	alert("Checked dependencies successfully");
@@ -203,7 +203,6 @@ document.querySelector("#openDirBtn").addEventListener('click', (event) => {
 	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: __dirname, properties: ["openDirectory"]}).then((response) => {
 		if(!response.canceled) {
 			// Reset gdml List
-			totalGdmlList = new Array();
 			setRootDirectory(response.filePaths[0]);
 		}
 	});
@@ -212,6 +211,8 @@ document.querySelector("#openDirBtn").addEventListener('click', (event) => {
 // TODO ::: Completely remove current tabObjects list.
 // FUNCTION ::: Set root directory and set other variables accordingly.
 function setRootDirectory(directory) {
+	//console.log("Setting root directory");
+	totalGdmlList = new Array();
 	try {
 		let files = fs.readdirSync(directory);
 

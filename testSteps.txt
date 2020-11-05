@@ -55,8 +55,26 @@
 	-> Make sidenav always visible and move all buttons inside of navMenu
 	-> Make status bar and tab buttons go with current toastuieditor (or find what toastuieditor has used. There must be a referecnes).
 
+XXX Able to input reference by hand => This should be done with full Path which is just too trivial trash it.
+
+!Important
+	-> Refernce check is broken
+	-> Rechecking changes status which is not acceptible.
+	-> ANd this error happens 
+	index.js:149 Uncaught TypeError: Cannot read property 'status' of undefined
+    at HTMLButtonElement.<anonymous> (index.js:149)
+	-> I think this derived from gdmlList got doubled after chaning files.
+
 !4. Enable drag and drop for references 
-	X Able to input reference by hand => This should be done with full Path which is just too trivial trash it.
+	-> Currently dependencies checking is not properly done yet.
+	-> After chaning content of the file and manualy saving 
+	-> Dependency checking yield error saying undefined object do not have status
+	-> After a inspection it says totalGdmlList is doubled in which reason I don't know
+	-> I thought totalGdmlList was not resetting on setting root direcotory which was partially
+	-> right but... after dependencies checking it add gdmlList by one hmm...
+	-> And it has gone... F* this magic show... 
+
+
     -> Show references to upper part of editor. => Done
 	-> Make refDiv consistant over tabs => Done
 	-> Only add to temporary content apply when save button is clicked. => Done

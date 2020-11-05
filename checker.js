@@ -4,6 +4,7 @@ const fs = require('fs');
 const OUTDATED = "OUTDATED";
 const UPTODATE = "UPTODATE";
 const NOTCHECKED = "NOTCHECKED";
+const _ = require('lodash');
 
 // CLASS ::: Used by Checker class instance
 // Saves values needed for dependencies checking.
@@ -181,9 +182,11 @@ module.exports = {
 		// use of getLevelSortedList function inside of checkDependencies for real production code
 		// FUNCTION ::: Check dependencies and return status list(array) according to dependencies' timestamps and status
 		checkDependencies(values) {
+			//console.log("VAlue is ");
+			//console.log(JSON.parse(JSON.stringify(values)));
 			values.forEach((item) => {
-				console.log("Checking file ->");
-				console.log(item);
+				//console.log("Checking file ->");
+				//console.log(item);
 				// if no children then set UPTODATE
 				if (item.childrenSet.size === 0) {
 					item.status = UPTODATE;
@@ -192,18 +195,23 @@ module.exports = {
 				else {
 					var isOutdated = Array.from(item.childrenSet).some((child) => {
 						let node = this.getNode(child); // this should not be null becuase childrenSet is added from real Node.
+						
+						//console.log("---");
+						//console.log("Is node outdated in state?" + JSON.parse(JSON.stringify(node.status)))
+						//console.log("Is node older than childNode?" + JSON.parse(JSON.stringify(item.lastModified.getTime() < node.lastModified.getTime())))
+						//console.log("---");
 						return (node.status == OUTDATED || item.lastModified.getTime() < node.lastModified.getTime());
 					});
 					if (isOutdated) item.status = OUTDATED;
 					else item.status = UPTODATE;
 				}
 
-				console.log("after check");
-				console.log(item);
+				//console.log("after check");
+				//console.log(item);
 			});
 
-			console.log("List after checking");
-			console.log(values);
+			//console.log("List after checking");
+			//console.log(values);
 		}
 
 		// FUNCTION ::: Get Level sorted list from map's values
@@ -211,9 +219,19 @@ module.exports = {
 		getLevelSortedList() {
 			let values = Array.from(this.nodes.values());
 
+			// TODO ::: Replace with lowdash
 			values.sort((a,b) => {
-				return a.level-b.level; // this sorts by increasing order.
-			})
+				if ( a.level < b.level ){
+					return -1;
+				}
+				if ( a.level > b.level ){
+					return 1;
+				}
+				return 0;
+			});
+
+			//console.log("After");
+			//console.log(values);
 
 			return values;
 		}
