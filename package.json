@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "electron": "^10.1.5",
+    "electron-packager": "^15.1.0",
     "eslint": "^7.12.1",
     "tailwind": "^4.0.0"
   },
@@ -17,7 +19,6 @@
     "@fortawesome/fontawesome-free": "^5.15.1",
     "@toast-ui/editor": "^2.5.0",
     "codemirror": "^5.58.2",
-    "electron": "^10.1.5",
     "js-yaml": "^3.14.0",
     "lodash": "^4.17.20",
     "node-watch": "^0.7.0"
