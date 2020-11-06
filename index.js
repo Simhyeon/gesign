@@ -15,6 +15,18 @@ const _ = require("lodash");
 let watcher = null;
 let checker = new Checker();
 
+let givenDirectory = remote.process.cwd();
+let args = remote.process.argv;
+// Check if directory is given 
+// if arg is not end and given directory then set to givenDirectory
+for (let i =1; i < args.length; i++) {
+	if (args[i] === "-d" || args[i] === "--dir") {
+		if (i !== args.length - 1 && fs.lstatSync(args[i+1]).isDirectory()) {
+			givenDirectory = args[i+1];
+		}
+	}
+}
+
 // VARAIBLE ::: Root direoctry given by user as a root for recursive file detection.
 let rootDirectory = null;
 // VARAIBLE ::: Total list of gdml files's object 
@@ -266,7 +278,7 @@ document.querySelector('#saveFileBtn').addEventListener('click', () => {
 
 // EVENT ::: Open Dialog and set rootDirectory
 document.querySelector("#openDirBtn").addEventListener('click', (event) => {
-	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: __dirname, properties: ["openDirectory"]}).then((response) => {
+	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: givenDirectory, properties: ["openDirectory"]}).then((response) => {
 		if(!response.canceled) {
 			// Reset gdml List
 			setRootDirectory(response.filePaths[0]);

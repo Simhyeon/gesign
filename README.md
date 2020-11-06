@@ -31,8 +31,8 @@ Making a desktop application is not an easy task. Furthermore making it cross-pl
 
 ### TODO 
 
+- [X] Command line options e.g init, new file
 - [ ] Single executable file
-- [ ] Command line options e.g init, new file
 - [ ] Config file for exclusion rule
 - [ ] Editable comment section.
 - [ ] Git integration
