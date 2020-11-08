@@ -4,6 +4,7 @@ const path = require("path");
 const url = require("url");
 const yaml = require('js-yaml');
 const cli = require('./cli');
+const checker = require('./checker');
 const {CliOption} = require('./cli');
 
 const {app, BrowserWindow, protocol, globalShortcut} = require("electron");
@@ -18,7 +19,8 @@ let args = process.argv;
 cli.init(args);
 let mainCliOptions = new Array(
 	{shortOp: "-n", longOp: "--new", action: newGdmlFile, actionArg: null},
-	{shortOp: "-h", longOp: "--help", action: showHelpText, actionArg: null}
+	{shortOp: "-h", longOp: "--help", action: showHelpText, actionArg: null},
+	{shortOp: null, longOp: "--check", action: checkValidation, actionArg: null}
 )
 for (let i = 0; i < mainCliOptions.length; i++) {
 	let argIndex = cli.getFlagArgIndex(mainCliOptions[i]);
@@ -28,6 +30,26 @@ for (let i = 0; i < mainCliOptions.length; i++) {
 	cli.execFlagAction(mainCliOptions[i]);
 }
 
+function checkValidation(fileName = null) {
+	if (fileName === null) {
+		console.log("Please give a file path to check validation");
+		process.exit(0);
+	} else {
+		let fullPath = fileName;
+		if (!path.isAbsolute(fileName)) {
+			fullPath = path.join(process.cwd(), fileName);
+		}
+
+		if (checker.IsValidGdml(fullPath)) {
+			console.log("File : " + fileName + " is a valid gdml file.");
+		} else {
+			console.log("File : " + fileName + " is not a valid gdml file.");
+		}
+
+		process.exit(0);
+	}
+}
+
 function newGdmlFile(name = null) {
 	let fileName = 'new.gdml';
 	if (name !== null) {
@@ -35,7 +57,7 @@ function newGdmlFile(name = null) {
 	}
 	//create new file named gdml
 	try {
-		let fullPath = path.join(process.cwd() + "/" + fileName)
+		let fullPath = path.join(process.cwd(), fileName)
 		fs.writeFileSync(fullPath, yaml.safeDump(newGdml));
 	} catch (err) {
 		console.log("Failed to create file with error : " + err);

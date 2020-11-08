@@ -114,7 +114,10 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 
 	currentTabIndex = tabObjects.length;
 	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
-	var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: true, path: path.join(rootDirectory + '/' +'new.gdml'), refs: new Set() ,content: {status: UPTODATE, reference: new Array(), confirmed_by: "" ,body: ""}, meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
+
+	console.log(path.join(rootDirectory, 'new.gdml'));
+
+	var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: true, path: path.join(rootDirectory, 'new.gdml'), refs: new Set() ,content: {status: UPTODATE, reference: new Array(), confirmed_by: "" ,body: ""}, meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
 	tabObjects.push(tabObject);
 
 	// If editor's content changes and content is different from original one

@@ -1,10 +1,14 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
+const yaml = require('js-yaml');
 const OUTDATED = "OUTDATED";
 const UPTODATE = "UPTODATE";
 const NOTCHECKED = "NOTCHECKED";
 const _ = require('lodash');
+
+let gdmlTags = new Array("status", "reference", "body");
 
 // CLASS ::: Used by Checker class instance
 // Saves values needed for dependencies checking.
@@ -196,13 +200,13 @@ module.exports = {
 					var isOutdated = Array.from(item.childrenSet).some((child) => {
 						let node = this.getNode(child); // this should not be null becuase childrenSet is added from real Node.
 						
-						console.log("---");
-						console.log("Target item : " + item.value);
-						console.log("Is child node outdated? : " + JSON.parse(JSON.stringify(node.status)))
-						console.log("Is item older than childNode? : " + JSON.parse(JSON.stringify(item.lastModified.getTime() < node.lastModified.getTime())))
-						console.log("Item time : " + JSON.parse(JSON.stringify(item.lastModified.getTime())))
-						console.log("Child time : " + JSON.parse(JSON.stringify(node.lastModified.getTime())))
-						console.log("---");
+						//console.log("---");
+						//console.log("Target item : " + item.value);
+						//console.log("Is child node outdated? : " + JSON.parse(JSON.stringify(node.status)))
+						//console.log("Is item older than childNode? : " + JSON.parse(JSON.stringify(item.lastModified.getTime() < node.lastModified.getTime())))
+						//console.log("Item time : " + JSON.parse(JSON.stringify(item.lastModified.getTime())))
+						//console.log("Child time : " + JSON.parse(JSON.stringify(node.lastModified.getTime())))
+						//console.log("---");
 						return (node.status == OUTDATED || item.lastModified.getTime() < node.lastModified.getTime());
 					});
 					if (isOutdated) item.status = OUTDATED;
@@ -239,5 +243,30 @@ module.exports = {
 			return values;
 		}
 	},
+	// FUNCTION ::: Check references in headless state. (wihtout gui)
+	HeadLessChecker : class HeadLessChecker {
 
+	},
+	// FUNCTION ::: 
+	IsValidGdml : function(fullPath)  {
+		let result = null;
+		if (path.extname(fullPath) !== ".gdml") return false;
+		try {
+			result = yaml.load(fs.readFileSync(fullPath));
+		} catch {
+			return false;
+		}
+		let isValid = true;
+
+		if (result === null || result === undefined) {
+			return false;
+		}
+
+		gdmlTags.forEach((tag) => {
+			if (result[tag] === null || result[tag] === undefined ) {
+				isValid = false;
+			}
+		});
+		return isValid;
+	}
 }
