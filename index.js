@@ -10,6 +10,8 @@ const Editor = require('@toast-ui/editor');
 const Checker = require('./checker').Checker;
 const watch = require("node-watch");
 const _ = require("lodash");
+const cli = require("./cli");
+const CliOption = cli.CliOption;
 
 /// HEADER ::: Declare class instance to use 
 let watcher = null;
@@ -82,20 +84,16 @@ menu.append(new MenuItem({
   ]
 }))
 Menu.setApplicationMenu(menu)
-
 let givenDirectory = remote.process.cwd();
-let args = remote.process.argv;
-// Check if directory is given 
-// if arg is not end and given directory then set to givenDirectory
-for (let i =1; i < args.length; i++) {
-	if (args[i] === "-d" || args[i] === "--dir") {
-		if (i !== args.length - 1 && fs.lstatSync(args[i+1]).isDirectory()) {
-			givenDirectory = args[i+1];
-			setRootDirectory(givenDirectory);
-			break;
-		}
-	}
+
+// VARAIBLE ::: Cli option related 
+cli.init(remote.process.argv);
+let dirOption = new CliOption("-d", "--dir", setRootDirectory, null);
+let argIndex = cli.getFlagArgIndex(dirOption); 
+if (argIndex !== null) {
+	dirOption.actionArg = remote.process.argv[argIndex];
 }
+cli.execFlagAction(dirOption);
 
 // EVENT ::: Add new Document to tab
 document.querySelector("#addNewDocument").addEventListener('click', () => {

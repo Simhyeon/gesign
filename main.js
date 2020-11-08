@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require("path");
 const url = require("url");
 const yaml = require('js-yaml');
+const cli = require('./cli');
+const {CliOption} = require('./cli');
 
 const {app, BrowserWindow, protocol, globalShortcut} = require("electron");
 const {dialog} = require('electron');
@@ -10,24 +12,26 @@ const {dialog} = require('electron');
 let win;
 // new Gdml File represented as javascript object
 const newGdml = {status: 'UPTODATE', reference: new Array(), confirmed_by: "" ,body: ""}
-// cache variable
-let args = process.argv;
 
-// Each appArgs options are exclusive
-// argv[0] is program name so for loop starts from 1 index
-for (let i =1; i < args.length; i++) {
-	if (args[i] === "-n" || args[i] === "--new") {
-		newGdmlFile(i);
+// INITIALIZATION ::: Cli option related part
+let args = process.argv;
+cli.init(args);
+let mainCliOptions = new Array(
+	{shortOp: "-n", longOp: "--new", action: newGdmlFile, actionArg: null},
+	{shortOp: "-h", longOp: "--help", action: showHelpText, actionArg: null}
+)
+for (let i = 0; i < mainCliOptions.length; i++) {
+	let argIndex = cli.getFlagArgIndex(mainCliOptions[i]);
+	if (argIndex !== null) {
+		mainCliOptions[i].actionArg = args[argIndex];
 	}
-	if (args[i] === "-h" || args[i] === "--help") {
-		showHelpText();
-	}
+	cli.execFlagAction(mainCliOptions[i]);
 }
 
-function newGdmlFile(argIndex) {
+function newGdmlFile(name = null) {
 	let fileName = 'new.gdml';
-	if (argIndex !== args.length - 1) {
-		fileName = args[argIndex+1];
+	if (name !== null) {
+		fileName = name;
 	}
 	//create new file named gdml
 	try {
