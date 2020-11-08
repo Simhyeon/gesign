@@ -12,7 +12,7 @@ const {dialog} = require('electron');
 
 let win;
 // new Gdml File represented as javascript object
-const newGdml = {status: 'UPTODATE', reference: new Array(), confirmed_by: "" ,body: ""}
+const newGdml = {status: 'UPTODATE', reference: new Array(),body: ""}
 
 // INITIALIZATION ::: Cli option related part
 let args = process.argv;

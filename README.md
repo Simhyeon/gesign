@@ -11,7 +11,6 @@ Gdml format is just a yaml file with predefined tags. Gdml format consists of me
 ## Gdml specification
 - **status** : either OUTDATED or UPTODATE
 - **reference** : array(list) of directories
-- **comment_by** : last comment 
 - **body** : document written in format of markdown(gfm).
 
 #### e.g
@@ -20,7 +19,6 @@ status: UPTODATE
 reference: 
 - path/to/target/file.gdml
 - file/that/should/be/ref/checked.gdml
-comment_by: Simon creek
 body: |-
   ### This is header
   <br>
