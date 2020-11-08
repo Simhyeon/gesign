@@ -13,19 +13,6 @@ const _ = require("lodash");
 
 /// HEADER ::: Declare class instance to use 
 let watcher = null;
-let checker = new Checker();
-
-let givenDirectory = remote.process.cwd();
-let args = remote.process.argv;
-// Check if directory is given 
-// if arg is not end and given directory then set to givenDirectory
-for (let i =1; i < args.length; i++) {
-	if (args[i] === "-d" || args[i] === "--dir") {
-		if (i !== args.length - 1 && fs.lstatSync(args[i+1]).isDirectory()) {
-			givenDirectory = args[i+1];
-		}
-	}
-}
 
 // VARAIBLE ::: Root direoctry given by user as a root for recursive file detection.
 let rootDirectory = null;
@@ -96,6 +83,20 @@ menu.append(new MenuItem({
 }))
 Menu.setApplicationMenu(menu)
 
+let givenDirectory = remote.process.cwd();
+let args = remote.process.argv;
+// Check if directory is given 
+// if arg is not end and given directory then set to givenDirectory
+for (let i =1; i < args.length; i++) {
+	if (args[i] === "-d" || args[i] === "--dir") {
+		if (i !== args.length - 1 && fs.lstatSync(args[i+1]).isDirectory()) {
+			givenDirectory = args[i+1];
+			setRootDirectory(givenDirectory);
+			break;
+		}
+	}
+}
+
 // EVENT ::: Add new Document to tab
 document.querySelector("#addNewDocument").addEventListener('click', () => {
 
@@ -115,7 +116,7 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 
 	currentTabIndex = tabObjects.length;
 	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
-	var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: true, path: "new.gdml", refs: new Set() ,content: {status: UPTODATE, reference: new Array(), confirmed_by: "" ,body: ""}, meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
+	var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: true, path: path.join(rootDirectory + '/' +'new.gdml'), refs: new Set() ,content: {status: UPTODATE, reference: new Array(), confirmed_by: "" ,body: ""}, meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
 	tabObjects.push(tabObject);
 
 	// If editor's content changes and content is different from original one
@@ -174,6 +175,7 @@ document.querySelector("#checker").addEventListener('click', () => {
 		return;
 	}
 
+	let checker = new Checker();
 	// Make NodeObject from totalGdmlList's item's
 	for (var i = 0, len = totalGdmlList.length; i < len; i++) {
 		let gdml = loadGdml(totalGdmlList[i].path);
@@ -213,15 +215,11 @@ document.querySelector("#checker").addEventListener('click', () => {
 		return 0;
 	});
 
-	//console.log(JSON.parse(JSON.stringify(totalGdmlList)));
-	//console.log(JSON.parse(JSON.stringify(checkerList)));
 	// TODO ::: Should change statuses of menu buttons 
+	// In first sight it should be ok becuase fs filewatch will detect status change and will
+	// read from root Directory.
 	// Should change statues of opened tabs
 	for (var j = 0, leng = totalGdmlList.length; j < leng; j++) {
-		//console.log("Checking  ----- ");
-		//console.log(totalGdmlList[i]);
-		//console.log("With ----- ");
-		//console.log(checkerList[i]);
 		// If Status has changed after dependency check, apply changes to file
 		// With this approcah caching(memory usage) is minified and I/O is maximized.
 		if (totalGdmlList[j].status !== checkerList[j].status) {
@@ -278,7 +276,12 @@ document.querySelector('#saveFileBtn').addEventListener('click', () => {
 
 // EVENT ::: Open Dialog and set rootDirectory
 document.querySelector("#openDirBtn").addEventListener('click', (event) => {
-	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: givenDirectory, properties: ["openDirectory"]}).then((response) => {
+	let newDirectory = rootDirectory;
+	if (rootDirectory === null) newDirectory = givenDirectory
+	console.log("Current ROOT directory is " + JSON.parse(JSON.stringify(rootDirectory))) ;
+	console.log("Current NEW directory is " + JSON.parse(JSON.stringify(newDirectory))) ;
+	console.log("Given directory is " + JSON.parse(JSON.stringify(givenDirectory))) ;
+	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: newDirectory, properties: ["openDirectory"]}).then((response) => {
 		if(!response.canceled) {
 			// Reset gdml List
 			setRootDirectory(response.filePaths[0]);
@@ -310,6 +313,12 @@ function setRootDirectory(directory) {
 
 		// Make new sideMenu buttons
 		listMenuButtons(directory , files, sideMenu);
+
+		// First time opening directory or opening new directory
+		// Fold all directories
+		if (rootDirectory === null || rootDirectory !== directory) {
+			document.querySelectorAll(".dirButton").forEach(item => item.click());
+		}
 	} catch(error) {
 		return console.error('Unable to scan directory: ' + error);
 	}
@@ -369,6 +378,8 @@ function setRootDirectory(directory) {
 
 						tabObject.refs = new Set(readContent["reference"]);
 					}
+
+					statusGraphics(readContent["status"]);
 				}
 			}
 		})
@@ -388,6 +399,7 @@ function setRootDirectory(directory) {
 	watcher = watch(rootDirectory, {recurisve: true}, (evt, name) => {
 		// If changed file is gdml then reload the whole project
 		if (path.extname(name).toLowerCase() === ".gdml") {
+			console.log("Reading directory");
 			setRootDirectory(rootDirectory);
 		}
 	});
@@ -470,7 +482,7 @@ function listDirectory(root, dirName, parentElement) {
 	var divElem = document.createElement('div');
 	var dirElem = document.createElement('button');
 	divElem.classList.add("border-gray-700", "border-t", "border-b", "flex", "flex-col");
-	dirElem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "m-2");
+	dirElem.classList.add("dirButton", "rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "m-2");
 	let fullPath = path.join(root, dirName);
 	dirElem.textContent = "↓" + dirName;
 	dirElem.dataset.path = fullPath;
@@ -778,13 +790,17 @@ function addRefBtn(fileName, listing) {
 		let refValue = event.currentTarget.previousSibling.dataset.path;
 		console.log("Trying to delete" + refValue);
 		currentTabObject.refs.delete(refValue);
+
+		console.log(JSON.parse(JSON.stringify(currentTabObject.content["reference"])));
+		console.log(JSON.parse(JSON.stringify(currentTabObject.refs)));
+
 		if (_.isEqual(new Set(currentTabObject.content["reference"]), currentTabObject.refs)) {
 			currentTabObject.refStatus = SAVED;
 			if (currentTabObject.contentStatus === SAVED) {
 				currentTabObject.tab.textContent = path.basename(currentTabObject.path);
 			}
 		} else {
-			currentTabObject.status = UNSAVED;
+			currentTabObject.refStatus = UNSAVED;
 			currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
 		}
 		event.currentTarget.parentElement.remove();

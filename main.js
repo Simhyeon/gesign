@@ -36,7 +36,7 @@ function newGdmlFile(argIndex) {
 	} catch (err) {
 		console.log("Failed to create file with error : " + err);
 	}
-	process.exit(1);
+	process.exit(0);
 }
 
 function showHelpText() {
@@ -47,7 +47,7 @@ Options:
   -d, --dir <Directory>                     Open gesign with given directory as current working directory.
 `;
 	console.log(helpText);
-	process.exit(1);
+	process.exit(0);
 }
 
 // ELECTRON Initiation
@@ -64,7 +64,7 @@ function createWindow() {
 		slashes: true
 	}));
 
-	//win.webContents.openDevTools();
+	win.webContents.openDevTools();
 	win.on('closed', () => {
 		win = null;
 	})

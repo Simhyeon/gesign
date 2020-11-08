@@ -196,10 +196,13 @@ module.exports = {
 					var isOutdated = Array.from(item.childrenSet).some((child) => {
 						let node = this.getNode(child); // this should not be null becuase childrenSet is added from real Node.
 						
-						//console.log("---");
-						//console.log("Is node outdated in state?" + JSON.parse(JSON.stringify(node.status)))
-						//console.log("Is node older than childNode?" + JSON.parse(JSON.stringify(item.lastModified.getTime() < node.lastModified.getTime())))
-						//console.log("---");
+						console.log("---");
+						console.log("Target item : " + item.value);
+						console.log("Is child node outdated? : " + JSON.parse(JSON.stringify(node.status)))
+						console.log("Is item older than childNode? : " + JSON.parse(JSON.stringify(item.lastModified.getTime() < node.lastModified.getTime())))
+						console.log("Item time : " + JSON.parse(JSON.stringify(item.lastModified.getTime())))
+						console.log("Child time : " + JSON.parse(JSON.stringify(node.lastModified.getTime())))
+						console.log("---");
 						return (node.status == OUTDATED || item.lastModified.getTime() < node.lastModified.getTime());
 					});
 					if (isOutdated) item.status = OUTDATED;

@@ -5,7 +5,9 @@ module.exports = {
 	},
 	purge: {
 		enabled: true,
-		content: ['./*.css'],
+		mode: 'layers',
+	    layers: ['base', 'components', 'utilities'],
+		content: ['./styles.css', './index.html'],
 	},
 	theme: {
 		extend: {},
