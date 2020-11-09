@@ -285,7 +285,7 @@ function saveFile() {
 document.querySelector("#openDirBtn").addEventListener('click', (event) => {
 	let newDirectory = rootDirectory;
 	if (rootDirectory === null) newDirectory = givenDirectory
-	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: newDirectory, filters: [{name: "Files", extensions: ["gdml", "json"]}],properties: ["openDirectory"]}).then((response) => {
+	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: newDirectory, properties: ["openDirectory"]}).then((response) => {
 		if(!response.canceled) {
 			// Reset gdml List
 			setRootDirectory(response.filePaths[0]);
