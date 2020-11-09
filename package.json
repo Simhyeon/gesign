@@ -1,16 +1,23 @@
 {
   "name": "gesign",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.1",
+  "description": "Game Document editor",
   "main": "main.js",
+  "build": {
+	  "appId": "xyz.siomoncreek.gesign",
+	  "mac": {
+		"category": "public.app-category.developer-tools"
+	  }
+  },
   "scripts": {
     "start": "electron ."
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Simon Creek",
+  "license": "MIT",
   "devDependencies": {
     "electron": "^10.1.5",
+    "electron-builder": "^22.9.1",
     "electron-packager": "^15.1.0",
     "eslint": "^7.12.1",
     "tailwind": "^4.0.0"
