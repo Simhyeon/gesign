@@ -75,11 +75,15 @@ menu.append(new MenuItem({
   }, {
     label: 'Save File',
     accelerator: process.platform === 'darwin' ? 'Cmd+Shift+S' : 'Control+Shift+S',
-    click: () => { document.querySelector("#saveFileBtn").click(); }
+    click: () => { saveFile() }
   },{
     label: 'Check dependencies',
     accelerator: process.platform === 'darwin' ? 'Cmd+Shift+R' : 'Control+Shift+R',
     click: () => { document.querySelector("#checker").click(); }
+  },{
+    label: 'Toggle Mode',
+    accelerator: process.platform === 'darwin' ? 'Cmd+Shift+M' : 'Control+Shift+M',
+    click: () => { toggleMode() }
   }
   ]
 }))
@@ -115,8 +119,6 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	currentTabIndex = tabObjects.length;
 	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
 
-	console.log(path.join(rootDirectory, 'new.gdml'));
-
 	var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: true, path: path.join(rootDirectory, 'new.gdml'), refs: new Set() ,content: {status: UPTODATE, reference: new Array() ,body: ""}, meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
 	tabObjects.push(tabObject);
 
@@ -125,7 +127,7 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	// Also change tab's name to somewhat distinguishable.
 	editorInstance.on("change", () => {
 		let currentTab = tabObjects[currentTabIndex];
-		if (currentTab.content["body"] !== currentTab.editor.getMarkdown()) {
+		if (currentTab.content["body"] !== currentTab.editor.getMarkdown().trim()) {
 			currentTab.contentStatus = UNSAVED;
 			currentTab.tab.textContent = path.basename(currentTab.path) + UNSAVEDSYMBOL;
 		} else { // both contents are same
@@ -224,7 +226,7 @@ document.querySelector("#checker").addEventListener('click', () => {
 		// If Status has changed after dependency check, apply changes to file
 		// With this approcah caching(memory usage) is minified and I/O is maximized.
 		if (totalGdmlList[j].status !== checkerList[j].status) {
-			let readFile = yaml.load(fs.readFileSync(totalGdmlList[j].path));
+			let readFile = yaml.load(fs.readFileSync(totalGdmlList[j].path), 'utf8');
 			readFile["status"] = checkerList[j].status;
 			fs.writeFileSync(totalGdmlList[j].path, yaml.safeDump(readFile), 'utf8');
 		}
@@ -234,6 +236,10 @@ document.querySelector("#checker").addEventListener('click', () => {
 
 // EVENT ::: Save markdown of tabObject into the file which path is associated with tabObject.
 document.querySelector('#saveFileBtn').addEventListener('click', () => {
+	saveFile();
+});
+
+function saveFile() {
 	// if there is tab to save then return;
 	if (tabObjects.length === 0) return;
 	// Get currentTabObject for easy reading
@@ -241,12 +247,13 @@ document.querySelector('#saveFileBtn').addEventListener('click', () => {
 	if(currentTabObject.contentStatus !== UNSAVED && currentTabObject.refStatus !== UNSAVED) return; // if file is not unsaved then skip operation
 
 	// Update content body with editor's content
-	currentTabObject.content["body"] = currentTabObject.editor.getMarkdown();
+	currentTabObject.content["body"] = currentTabObject.editor.getMarkdown().trim();
 	currentTabObject.content["reference"] = Array.from(currentTabObject.refs);
 	// If not manualSave directrly save without further procedure
 	if (!currentTabObject.manualSave) {
 		fs.writeFileSync(currentTabObject.path, yaml.safeDump(currentTabObject.content), 'utf8');
-		alert("Saved successfully");
+		// TODO ::: Not necessarily needed.
+		//alert("Saved successfully");
 
 		// set status to saved because it is getting saved. 
 		currentTabObject.contentStatus = SAVED;
@@ -272,17 +279,13 @@ document.querySelector('#saveFileBtn').addEventListener('click', () => {
 			}
 		});
 	}
-
-});
+}
 
 // EVENT ::: Open Dialog and set rootDirectory
 document.querySelector("#openDirBtn").addEventListener('click', (event) => {
 	let newDirectory = rootDirectory;
 	if (rootDirectory === null) newDirectory = givenDirectory
-	console.log("Current ROOT directory is " + JSON.parse(JSON.stringify(rootDirectory))) ;
-	console.log("Current NEW directory is " + JSON.parse(JSON.stringify(newDirectory))) ;
-	console.log("Given directory is " + JSON.parse(JSON.stringify(givenDirectory))) ;
-	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: newDirectory, properties: ["openDirectory"]}).then((response) => {
+	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: newDirectory, filters: [{name: "Files", extensions: ["gdml", "json"]}],properties: ["openDirectory"]}).then((response) => {
 		if(!response.canceled) {
 			// Reset gdml List
 			setRootDirectory(response.filePaths[0]);
@@ -293,7 +296,6 @@ document.querySelector("#openDirBtn").addEventListener('click', (event) => {
 // TODO ::: Completely remove current tabObjects list.
 // FUNCTION ::: Set root directory and set other variables accordingly.
 function setRootDirectory(directory) {
-	//console.log("Setting root directory");
 	totalGdmlList = new Array();
 	try {
 		let files = fs.readdirSync(directory);
@@ -313,13 +315,9 @@ function setRootDirectory(directory) {
 		divElem.appendChild(dirElem);
 
 		// Make new sideMenu buttons
-		listMenuButtons(directory , files, sideMenu);
+		let doFoldDirectory = rootDirectory === null || rootDirectory !== directory;
+		listMenuButtons(directory , files, sideMenu, doFoldDirectory);
 
-		// First time opening directory or opening new directory
-		// Fold all directories
-		if (rootDirectory === null || rootDirectory !== directory) {
-			document.querySelectorAll(".dirButton").forEach(item => item.click());
-		}
 	} catch(error) {
 		return console.error('Unable to scan directory: ' + error);
 	}
@@ -355,7 +353,7 @@ function setRootDirectory(directory) {
 				// TODO ::: Make this part work with references
 				// If file has changed 
 				// load changed file contents
-				let readContent = yaml.load(fs.readFileSync(tabObject.path));
+				let readContent = yaml.load(fs.readFileSync(tabObject.path), 'utf8');
 				// Compare contents of read file and editor's contents
 				if (readContent !== tabObject.content) {
 					// If editor is unsaved
@@ -367,8 +365,14 @@ function setRootDirectory(directory) {
 					// If editor content is not "unsaved"
 					// just copy file contents to editor
 					else {
-						tabObject.content = readContent;
-						tabObject.editor.setMarkdown(readContent["body"], false);
+						// TODO ::: THIS might be bloat, however this app is bloat anyway.
+						// Reason why checking equality before setting, although it looks redundant
+						// is that pasting makes cursor to move to start area which is not an ideal
+						// experience for end users.
+						if (tabObject.editor.getMarkdown().trim() !== readContent["body"].trim()) {
+							tabObject.content = readContent;
+							tabObject.editor.setMarkdown(readContent["body"], false);
+						}
 
 						// TODO ::: Get References from list
 						readContent["reference"].forEach((ref) => {
@@ -385,6 +389,7 @@ function setRootDirectory(directory) {
 			}
 		})
 	}
+
 	// Update root directory
 	rootDirectory = directory;	
 
@@ -400,7 +405,6 @@ function setRootDirectory(directory) {
 	watcher = watch(rootDirectory, {recurisve: true}, (evt, name) => {
 		// If changed file is gdml then reload the whole project
 		if (path.extname(name).toLowerCase() === ".gdml") {
-			console.log("Reading directory");
 			setRootDirectory(rootDirectory);
 		}
 	});
@@ -432,7 +436,7 @@ document.querySelector("#printBtn").addEventListener('click', (event) => {
 // better aesthetics
 // TODO ::: Might better make config file and set ignore list.
 // FUNCTION ::: Create menu buttons recursively.
-function listMenuButtons(root, files, parentElement) {
+function listMenuButtons(root, files, parentElement, foldDirectory = false) {
 	// TODO ::: This should be handled as a proper config settings.
 	// Do not show hidden files (files which names start with dot.)
 	//files = files.filter(item => !(/(^|\/)\.[^/.]/g).test(item)); // copy pasted code
@@ -442,7 +446,7 @@ function listMenuButtons(root, files, parentElement) {
 	let filesArray = files.filter(file => !fs.lstatSync(path.join(root, file)).isDirectory());
 
 	dirsArray.forEach((file) => {
-		listDirectory(root, path.basename(file), parentElement);
+		listDirectory(root, path.basename(file), parentElement, foldDirectory);
 	})
 	filesArray.forEach((file) => {
 		if (path.extname(file).toLowerCase() === ".gdml") {
@@ -456,7 +460,7 @@ function listFile(root, fileName, parentElement) {
 	var elem = document.createElement('button');
 
 	let fullPath = path.join(root , fileName);
-	let fileYaml = yaml.load(fs.readFileSync(fullPath)); // this should not fail becuase it was read from readdirSync
+	let fileYaml = yaml.load(fs.readFileSync(fullPath), 'utf8'); // this should not fail becuase it was read from readdirSync
 	let menuColor = UNDEFINEDCOLOR; // Undefined color
 	if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
 	else menuColor = UPTODATECOLOR;
@@ -471,7 +475,7 @@ function listFile(root, fileName, parentElement) {
 		event.dataTransfer.setData('text/plain', event.currentTarget.dataset.path);
 	});
 
-	elem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "m-2");
+	elem.classList.add("fileBtn","rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "m-2");
 	elem.draggable = true;
 	parentElement.appendChild(elem);
 	// Add value to array(list) so that dependency checker can do his job.
@@ -479,7 +483,7 @@ function listFile(root, fileName, parentElement) {
 }
 
 // FUNCTION ::: Create directory menu button
-function listDirectory(root, dirName, parentElement) {
+function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 	var divElem = document.createElement('div');
 	var dirElem = document.createElement('button');
 	divElem.classList.add("border-gray-700", "border-t", "border-b", "flex", "flex-col");
@@ -495,6 +499,9 @@ function listDirectory(root, dirName, parentElement) {
 			console.log("Failed to read recursive files in directory");
 		} else {
 			listMenuButtons(fullPath, files, divElem);
+			if (foldDirectory) {
+				dirElem.click();
+			}
 		}
 	});
 }
@@ -505,7 +512,7 @@ function loadGdml(filePath) {
 	if (path.extname(filePath).toLowerCase() !== ".gdml") return null;
 	try {
 		let result = fs.readFileSync(filePath);
-		return yaml.load(result);
+		return yaml.load(result, 'utf8');
 	} catch {
 		console.log("No file found");
 		return null;
@@ -564,16 +571,15 @@ function loadGdmlToEditor(event) {
 		// CurrentTab Index should be equal to length because in this line length is not added by 1.
 		currentTabIndex = tabObjects.length;
 		let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
-		var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: false, path: filePath, ref: new Set() ,content: yaml.load(data), meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
+		var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: false, path: filePath, ref: new Set() ,content: yaml.safeLoad(data, 'utf8'), meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
 		tabObjects.push(tabObject);
 
-		editorInstance.setMarkdown(tabObject.content["body"], false);
 		// If editor's content changes and content is different from original one
 		// then set status to unsaved.
 		// Also change tab's name to somewhat distinguishable.
 		editorInstance.on("change", () => {
 			let currentTab = tabObjects[currentTabIndex];
-			if (currentTab.content["body"] !== currentTab.editor.getMarkdown()) {
+			if (currentTab.content["body"] !== currentTab.editor.getMarkdown().trim()) {
 				currentTab.contentStatus = UNSAVED;
 				currentTab.tab.textContent = path.basename(currentTab.path) + UNSAVEDSYMBOL;
 			} else { // both contents are same
@@ -786,15 +792,8 @@ function addRefBtn(fileName, listing) {
 		// Remove reference from currentTabObject's references
 		// if removed version is equal to read value then set to SAVED
 		let currentTabObject =tabObjects[currentTabIndex];
-		console.log("Before deletion");
-		console.log(currentTabObject.refs);
 		let refValue = event.currentTarget.previousSibling.dataset.path;
-		console.log("Trying to delete" + refValue);
 		currentTabObject.refs.delete(refValue);
-
-		console.log(JSON.parse(JSON.stringify(currentTabObject.content["reference"])));
-		console.log(JSON.parse(JSON.stringify(currentTabObject.refs)));
-
 		if (_.isEqual(new Set(currentTabObject.content["reference"]), currentTabObject.refs)) {
 			currentTabObject.refStatus = SAVED;
 			if (currentTabObject.contentStatus === SAVED) {
@@ -821,4 +820,18 @@ function hideCurrentTab() {
 	tabObjects[currentTabIndex].meta.style.display = "none";
 	tabObjects[currentTabIndex].tab.parentElement.classList.remove(HIGHLIGHT);
 	tabObjects[currentTabIndex].tab.parentElement.classList.add(NORMALBG);
+}
+
+// FUNCTION ::: Toggle between editing modes.
+function toggleMode() {
+	// if no tab is open then ignore(return).
+	if (currentTabIndex === -1) return;
+
+	let currentTabObject = tabObjects[currentTabIndex];
+
+	if (currentTabObject.editor.isMarkdownMode()) {
+		currentTabObject.editor.changeMode('wysiwyg');
+	} else {
+		currentTabObject.editor.changeMode('markdown');
+	}
 }
