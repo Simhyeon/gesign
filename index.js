@@ -127,7 +127,7 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	// Also change tab's name to somewhat distinguishable.
 	editorInstance.on("change", () => {
 		let currentTab = tabObjects[currentTabIndex];
-		if (currentTab.content["body"] !== currentTab.editor.getMarkdown().trim()) {
+		if (currentTab.content["body"].trim() !== currentTab.editor.getMarkdown().trim()) {
 			currentTab.contentStatus = UNSAVED;
 			currentTab.tab.textContent = path.basename(currentTab.path) + UNSAVEDSYMBOL;
 		} else { // both contents are same
@@ -573,6 +573,7 @@ function loadGdmlToEditor(event) {
 		let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
 		var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: false, path: filePath, ref: new Set() ,content: yaml.safeLoad(data, 'utf8'), meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
 		tabObjects.push(tabObject);
+		editorInstance.setMarkdown(tabObject.content["body"], false);
 
 		// If editor's content changes and content is different from original one
 		// then set status to unsaved.
