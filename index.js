@@ -167,7 +167,10 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 
 // EVENT ::: Make Checker object and add all gdml documents as NodeInstance to checkerinstance
 document.querySelector("#checker").addEventListener('click', () => {
+	checkerButton();
+});
 
+function checkerButton() {
 	if (rootDirectory === null) return;
 
 	// If unsaved tab exists dependency check cannot happen
@@ -234,8 +237,8 @@ document.querySelector("#checker").addEventListener('click', () => {
 			fs.writeFileSync(totalGdmlList[j].path, yaml.safeDump(readFile), 'utf8');
 		}
 	}
-	alert("Checked dependencies successfully");
-});
+	//alert("Checked dependencies successfully");
+}
 
 // EVENT ::: Save markdown of tabObject into the file which path is associated with tabObject.
 document.querySelector('#saveFileBtn').addEventListener('click', () => {
@@ -282,10 +285,14 @@ function saveFile() {
 			}
 		});
 	}
+
+	// If config is set to check references on save check references;
+	// This might not? work as expected according to asynchronous file watch logics.
+	if (config.content["checkOnSave"]) checkerButton();
 }
 
 // EVENT ::: Open Dialog and set rootDirectory
-document.querySelector("#openDirBtn").addEventListener('click', (event) => {
+document.querySelector("#openDirBtn").addEventListener('click', () => {
 	let newDirectory = rootDirectory;
 	if (rootDirectory === null) newDirectory = givenDirectory
 	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: newDirectory, properties: ["openDirectory"]}).then((response) => {
@@ -315,6 +322,8 @@ function setRootDirectory(directory) {
 		files = fs.readdirSync(directory);
 		// Set directory's config file to current directory's config if exists.
 		config.readFromFile(path.join(directory, "gesign_config.json"));
+		// Change font size according to font size
+		setFontSize();
 
 		// Remove children of sideMenu
 		while(sideMenu.firstChild) {
@@ -432,7 +441,7 @@ function setRootDirectory(directory) {
 
 // SOURCE ::: https://stackoverflow.com/questions/12997123/print-specific-part-of-webpage/#answer-12997207
 // FUNCTION ::: Print editor content into file
-document.querySelector("#printBtn").addEventListener('click', (event) => {
+document.querySelector("#printBtn").addEventListener('click', () => {
 	if (currentTabIndex === -1) return; // if there is no file to print then return.
 	tabObjects[currentTabIndex].editor.changeMode('wysiwyg');
 	let editorHtml = tabObjects[currentTabIndex].screen.querySelector(".te-editor-section").outerHTML;
@@ -610,6 +619,7 @@ function loadGdmlToEditor(event) {
 		var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: false, path: filePath, ref: new Set() ,content: yaml.safeLoad(data, 'utf8'), meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
 		tabObjects.push(tabObject);
 		editorInstance.setMarkdown(tabObject.content["body"], false);
+		editorInstance.changeMode(config.content["startMode"]);
 
 		// If editor's content changes and content is different from original one
 		// then set status to unsaved.
@@ -870,5 +880,17 @@ function toggleMode() {
 		currentTabObject.editor.changeMode('wysiwyg');
 	} else {
 		currentTabObject.editor.changeMode('markdown');
+	}
+}
+
+// FUNCTION ::: Change Font size of editor.
+// This function is especially limited to Toast Ui Editor and webkit engine (Namely chrome) 
+function setFontSize() {
+	if (config.content["fontSize"] === "small") {
+		document.querySelector('style').innerHTML = ".te-md-container, .te-ww-container{zoom : 100%}";
+	} else if (config.content["fontSize"] === "middle") {
+		document.querySelector('style').innerHTML = ".te-md-container, .te-ww-container{zoom : 130%}";
+	} else if (config.content["fontSize"] === "large") {
+		document.querySelector('style').innerHTML = ".te-md-container, .te-ww-container{zoom : 150%}";
 	}
 }

@@ -3,51 +3,31 @@ const fs = require("fs");
 module.exports = {
 	Config : class Config {
 		Config() {
-			this.readConfig = "";
+			this.content = "";
 		}
 
 		readFromFile(filePath) {
 				// if given filePath is not same with name? ignore it if not json file then ignore
 			try {
 				let result = fs.readFileSync(filePath);
-				this.readConfig = JSON.parse(result);
+				this.content = JSON.parse(result);
 				console.log("Read");
-				console.log(this.readConfig);
+				console.log(this.content);
 			} catch (error) {
-				console.log("Failed to read file ERR ::: " + error);
-				this.readConfig = "";
+				console.log("Failed to read file or file doesn't exist. Error content : " + error);
+				// Set config to Default
+				this.content = { 
+					exclusion: new Array(),
+					startMode: "wysiwyg",
+					fontSize: "small",
+					checkOnSave : false
+				}
 			}
 		}
 
 		getExclusionRules() {
-			if (this.readConfig === "") return new Array();
-			return this.readConfig["exclusion"];
+			if (this.content === "") return new Array();
+			return this.content["exclusion"];
 		}
-
-		getProjectSetting() {
-			return this.readConfig["projectSetting"];
-		}
-	}
-}
-
-class Config {
-	Config() {
-		this.readConfig = "";
-	}
-
-	readFromFile(filePath) {
-		// if given filePath is not same with name? ignore it if not json file then ignore
-		try {
-			let result = fs.readFileSync(filePath);
-			this.readConfig = JSON.parse(result);
-		} catch (error) {
-			console.log("Failed to read file ERR ::: " + error);
-		}
-	}
-	getExclusionRules() {
-		return this.readConfig["exclusion"];
-	}
-	getProjectSetting() {
-		return this.readConfig["projectSetting"];
 	}
 }
