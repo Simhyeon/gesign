@@ -11,6 +11,7 @@ const Checker = require('./checker').Checker;
 const watch = require("node-watch");
 const _ = require("lodash");
 const cli = require("./cli");
+const {Config} = require("./config");
 const CliOption = cli.CliOption;
 
 /// HEADER ::: Declare class instance to use 
@@ -55,6 +56,8 @@ const mainDiv = document.querySelector("#main");
 const metaBar = document.querySelector("#metaBar");
 const editorScreen = document.querySelector("#editorScreen");
 
+// VARAIBLE ::: Config class
+let config = new Config();
 
 // INITIATION ::: Execute multiple initiation operation. 
 // Editorscreen should not be displayed but cloned and then set visible.
@@ -296,9 +299,22 @@ document.querySelector("#openDirBtn").addEventListener('click', (event) => {
 // TODO ::: Completely remove current tabObjects list.
 // FUNCTION ::: Set root directory and set other variables accordingly.
 function setRootDirectory(directory) {
+
+	// if path is relative then it is called with --dir flag thus making 
+	// joining with process.cwd() is alright.
+	if (!path.isAbsolute(directory)) {
+		directory = path.join(remote.process.cwd(), directory);
+	}
 	totalGdmlList = new Array();
+
+	// local Variable used later.
+	let doFoldDirectory = true;
+	let files;
+
 	try {
-		let files = fs.readdirSync(directory);
+		files = fs.readdirSync(directory);
+		// Set directory's config file to current directory's config if exists.
+		config.readFromFile(path.join(directory, "gesign_config.json"));
 
 		// Remove children of sideMenu
 		while(sideMenu.firstChild) {
@@ -314,14 +330,15 @@ function setRootDirectory(directory) {
 		sideMenu.appendChild(divElem);
 		divElem.appendChild(dirElem);
 
-		// Make new sideMenu buttons
-		let doFoldDirectory = rootDirectory === null || rootDirectory !== directory;
-		listMenuButtons(directory , files, sideMenu, doFoldDirectory);
+		console.log("Log before listing");
+		// Set variable that decided whether fold or not.
+		doFoldDirectory = (rootDirectory === null || rootDirectory !== directory);
 
 	} catch(error) {
 		return console.error('Unable to scan directory: ' + error);
 	}
 
+	// Disable Help text on startup
 	document.querySelector("#helpText").style.display = "none";
 
 	// If user is opening new root directory
@@ -393,6 +410,9 @@ function setRootDirectory(directory) {
 	// Update root directory
 	rootDirectory = directory;	
 
+	// List All menu buttons in side bar
+	listMenuButtons(directory , files, sideMenu, doFoldDirectory);
+
 	// If watch already exists then it means that it is not the first time function called.
 	// remove prior watcher and all listmenuButtons's children;
 	if (watcher !== null) {
@@ -445,10 +465,25 @@ function listMenuButtons(root, files, parentElement, foldDirectory = false) {
 	let dirsArray = files.filter(file => fs.lstatSync(path.join(root, file)).isDirectory());
 	let filesArray = files.filter(file => !fs.lstatSync(path.join(root, file)).isDirectory());
 
+	// Make Directory button with given directory list
+	// If directory is in exclusion list then ignore.
 	dirsArray.forEach((file) => {
+		if (config.getExclusionRules().find(rule => path.join(rootDirectory, rule) === path.join(root, file)) !== undefined) {
+			console.log("Found exclusion rule ignoring file : " + file);
+			return;
+		}
+
 		listDirectory(root, path.basename(file), parentElement, foldDirectory);
 	})
+
+	// Make file button with given files list
+	// If file is in exclusion list then ignore.
 	filesArray.forEach((file) => {
+		if (config.getExclusionRules().find(rule => path.join(rootDirectory, rule) === path.join(root, file)) !== undefined) {
+			console.log("Found exclusion rule ignoring file : " + file);
+			return;
+		}
+
 		if (path.extname(file).toLowerCase() === ".gdml") {
 			listFile(root, path.basename(file), parentElement);
 		} 
@@ -484,6 +519,7 @@ function listFile(root, fileName, parentElement) {
 
 // FUNCTION ::: Create directory menu button
 function listDirectory(root, dirName, parentElement, foldDirectory = false) {
+
 	var divElem = document.createElement('div');
 	var dirElem = document.createElement('button');
 	divElem.classList.add("border-gray-700", "border-t", "border-b", "flex", "flex-col");
