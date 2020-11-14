@@ -6,11 +6,13 @@ const yaml = require('js-yaml');
 const cli = require('./cli');
 const checker = require('./checker');
 const {CliOption} = require('./cli');
+const {Config} = require('./config');
 
 const {app, BrowserWindow, protocol, globalShortcut} = require("electron");
 const {dialog} = require('electron');
 
 let win;
+let config = new Config();
 // new Gdml File represented as javascript object
 const newGdml = {status: 'UPTODATE', reference: new Array(),body: ""}
 
@@ -20,8 +22,10 @@ cli.init(args);
 let mainCliOptions = new Array(
 	{shortOp: "-n", longOp: "--new", action: newGdmlFile, actionArg: null},
 	{shortOp: "-h", longOp: "--help", action: showHelpText, actionArg: null},
-	{shortOp: null, longOp: "--check", action: checkValidation, actionArg: null}
+	{shortOp: null, longOp: "--check", action: checkValidation, actionArg: null},
+	{shortOp: null, longOp: "--init", action: initConfig, actionArg: null}
 )
+
 for (let i = 0; i < mainCliOptions.length; i++) {
 	let argIndex = cli.getFlagArgIndex(mainCliOptions[i]);
 	if (argIndex !== null) {
@@ -50,6 +54,28 @@ function checkValidation(fileName = null) {
 	}
 }
 
+function initConfig(dirName = null) {
+	let fileName = "gesign_config.json";
+	if (dirName !== null && !path.isAbsolute(dirName)) 
+		fileName = path.join(dirName, fileName);
+
+	if (dirName === null || dirName == "./" || dirName == ".")
+		fileName = path.join(process.cwd(), fileName);
+
+	try {
+		if (!fs.existsSync(fileName)) {
+			console.log("Createing file to :" + fileName);
+			fs.writeFileSync(fileName, JSON.stringify(config.default(), null, "\t"));
+		} else {
+			console.log("Directory already has config file.");
+		}
+	} catch(err) {
+		console.log("Failed to init directory with error : " + err);
+	}
+
+	process.exit(0);
+}
+
 function newGdmlFile(name = null) {
 	let fileName = 'new.gdml';
 	if (name !== null) {
@@ -71,6 +97,8 @@ Options:
   -h, --help                                display help text.
   -n, --new <FileName>                      Create new gdml file, default name is new.gdml
   -d, --dir <Directory>                     Open gesign with given directory as current working directory.
+      --check <FileName>                    Check if file is valid gdml file.
+      --init <Directory>                    Create config file in given directory default is current working directory.
 `;
 	console.log(helpText);
 	process.exit(0);

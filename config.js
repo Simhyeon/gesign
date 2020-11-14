@@ -16,18 +16,22 @@ module.exports = {
 			} catch (error) {
 				console.log("Failed to read file or file doesn't exist. Error content : " + error);
 				// Set config to Default
-				this.content = { 
-					exclusion: new Array(),
-					startMode: "wysiwyg",
-					fontSize: "small",
-					checkOnSave : false
-				}
+				this.content = this.default();
 			}
 		}
 
 		getExclusionRules() {
 			if (this.content === "") return new Array();
 			return this.content["exclusion"];
+		}
+
+		default() {
+			return { 
+				exclusion: new Array(),
+				startMode: "wysiwyg",
+				fontSize: "small",
+				checkOnSave : false
+			}
 		}
 	}
 }
