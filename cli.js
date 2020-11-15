@@ -29,13 +29,12 @@ module.exports = {
 	execFlagAction : function(option) {
 		if (this.hasFlag(option)) {
 			if (option.actionArg !== null) {
-				option.action(option.actionArg);
+				return option.action(option.actionArg);
 			} else {
-				option.action();
+				return option.action();
 			}
-			return true;
 		} else {
-			return false;
+			return null;
 		}
 	},
 	getFlagArgIndex : function(option) {
