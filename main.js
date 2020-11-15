@@ -4,13 +4,16 @@ const {AppOption} = require('./appOption');
 
 const {app, BrowserWindow} = require("electron");
 
+// VARIABLE ::: Local window variable
 let win;
 
 // INITIALIZATION ::: Cli option related part
 let args = process.argv;
 let appOption = new AppOption(args);
 let processStatus = appOption.flagExecution();
+// If processStatus has been returned from closure corresponding to given flags
 if (processStatus !== null && processStatus.doExit) {
+	// Early Exit program
 	process.exit(processStatus.exitStatus);
 }
 

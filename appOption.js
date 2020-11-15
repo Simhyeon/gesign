@@ -7,6 +7,7 @@ const checker = require("./checker");
 const gdml = require("./gdml");
 const {Checker} = require("./checker");
 
+// CLASS :: Saves process status which determines process should exit or not and also exit code.
 class ProcessStatus {
 	constructor(doExit, exitStatus) {
 		this.doExit = doExit;
@@ -14,7 +15,9 @@ class ProcessStatus {
 	}
 }
 
+// TODO ::: Check if given argument is valid e.g if directory or if file is needed.
 module.exports = {
+	// CLASS ::: Logics reatled to parsing application specific options (unlike '--dir' which is related to editor features)
 	AppOption : class AppOption {
 		constructor(args) {
 
@@ -22,6 +25,7 @@ module.exports = {
 
 			this.rootDirectory = null;
 			this.args = args;
+			// Create cli options.
 			this.mainCliOptions = new Array(
 				{shortOp: "-n", longOp: "--new", action: this.newGdmlFile.bind(this), actionArg: null},
 				{shortOp: "-h", longOp: "--help", action: this.showHelpText.bind(this), actionArg: null},
@@ -32,6 +36,7 @@ module.exports = {
 			
 		}
 
+		// FUNCTION ::: Execute flag related functions and return processStatus yielded from function.
 		flagExecution() {
 			let tentativeResult;
 			for (let i = 0; i < this.mainCliOptions.length; i++) {
@@ -50,6 +55,7 @@ module.exports = {
 			return null;
 		}
 
+		// FUNCTION ::: Display help text
 		showHelpText() {
 			let helpText = `Usage: gesign [options] [arguments]
 Options:
@@ -65,6 +71,7 @@ Options:
 			return new ProcessStatus(true, 0);
 		}
 
+		// FUNCTION ::: Check if gien file is valid gdml file in other words if necessary tags are all inside of the file.
 		checkValidation(fileName = null) {
 			if (fileName === null) {
 				console.log("Please give a file path to check validation");
@@ -92,6 +99,7 @@ Options:
 			}
 		}
 
+		// FUNCTION ::: Create new config file in cwd or given directory.
 		initConfig(dirName = null) {
 			let config = new Config();
 			let fileName = "gesign_config.json";
@@ -115,6 +123,7 @@ Options:
 			return new ProcessStatus(true, 0);
 		}
 
+		// FUNCTION ::: Create new gdml file to given directory with given name
 		newGdmlFile(name = null) {
 			// new Gdml File represented as javascript object
 			let newGdml = gdml.newGdml();
@@ -132,6 +141,8 @@ Options:
 			return new ProcessStatus(true, 0);
 		}
 
+		// FUNCTION ::: Check dependencies of documents read from root Directory.
+		// This function saves updated status into read files.
 		checkDependencies(directory = null) {
 			if (directory === null || !fs.lstatSync(directory).isDirectory()) {
 				console.log("You should give a directory to check depedencies");
@@ -158,7 +169,6 @@ Options:
 			gdmlList.forEach((item) => {
 				checker.addNode(item.path, item.content);
 			})
-			// TODO ::: Foreach add all nodes
 			let checkerList = checker.checkDependencies();
 
 			// Sort both checkerList and totlaGdmlList by path(value).
@@ -182,10 +192,6 @@ Options:
 				return 0;
 			});
 
-			// TODO ::: Should change statuses of menu buttons 
-			// In first sight it should be ok becuase fs filewatch will detect status change and will
-			// read from root Directory.
-			// Should change statues of opened tabs
 			for (let j = 0, leng = gdmlList.length; j < leng; j++) {
 				// If Status has changed after dependency check, apply changes to file
 				// With this approcah caching(memory usage) is minified and I/O is maximized.
@@ -224,14 +230,14 @@ Options:
 			})
 		}
 
-		// FUNCTION ::: Create File menu button
+		// FUNCTION ::: List read file into gdmlList
 		listFile(gdmlList, root, fileName) {
 			let fullPath = path.join(root , fileName);
 			let fileYaml = yaml.load(fs.readFileSync(fullPath), 'utf8'); // this should not fail becuase it was read from readdirSync
 			gdmlList.push({ path: fullPath, content: fileYaml});
 		}
 
-		// FUNCTION ::: Create directory menu button
+		// FUNCTION ::: Read files from given directory so that listFile function can add gdml file to gdmlList varaible.
 		listDirectory(gdmlList, config,root, dirName) {
 			let fullPath = path.join(root, dirName);
 			fs.readdir(fullPath, (err, files) => {

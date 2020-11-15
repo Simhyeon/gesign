@@ -13,7 +13,6 @@ let gdmlTags = new Array("status", "reference", "body");
 
 // CLASS ::: Used by Checker class instance
 // Saves values needed for dependencies checking.
-// TODO :: Change this logic
 class NodeObject {
 	constructor(value, content) {
 		this.value = value;
@@ -44,6 +43,7 @@ class NodeObject {
 	}
 }
 
+// TODO ::: Should Include how checker works.
 module.exports = {
 	// CLASS ::: Checker class to check dependencies of given nodesMap
 	Checker : class Checker {
@@ -241,7 +241,9 @@ module.exports = {
 	HeadLessChecker : class HeadLessChecker {
 
 	},
-	// FUNCTION ::: 
+
+	// TODO :: Check if this function is needed.
+	// FUNCTION :::  Check if given file is valid gdml Used by index.js 
 	IsValidGdml : function(fullPath)  {
 		let result = null;
 		if (path.extname(fullPath) !== ".gdml") return false;

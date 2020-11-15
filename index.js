@@ -38,7 +38,6 @@ const OUTDATED = "OUTDATED";
 const UPTODATE = "UPTODATE";
 const UNSAVED ="UNSAVED";
 const SAVED ="SAVED";
-
 const UNSAVEDSYMBOL = "+";
 
 // VARAIBLE ::: COLOR value is based on tailwind-css class names
@@ -59,7 +58,7 @@ const editorScreen = document.querySelector("#editorScreen");
 
 // VARAIBLE ::: Config class
 let config = new Config();
-
+// ----------------------------------------------------------------------------
 // INITIATION ::: Execute multiple initiation operation. 
 // Editorscreen should not be displayed but cloned and then set visible.
 metaBar.style.display = "none";
@@ -93,6 +92,7 @@ menu.append(new MenuItem({
 }))
 Menu.setApplicationMenu(menu)
 let givenDirectory = remote.process.cwd();
+// ----------------------------------------------------------------------------
 
 // VARAIBLE ::: Cli option related 
 cli.init(remote.process.argv);
@@ -101,6 +101,7 @@ let argIndex = cli.getFlagArgIndex(dirOption);
 if (argIndex !== null) {
 	dirOption.actionArg = remote.process.argv[argIndex];
 }
+// Execute render window related cli options' corresponding functions(closure).
 cli.execFlagAction(dirOption);
 
 // EVENT ::: Add new Document to tab
@@ -182,6 +183,7 @@ document.querySelector("#checker").addEventListener('click', () => {
 	checkerButton();
 });
 
+// FUNCTION ::: Called by checkerButton event
 function checkerButton() {
 	if (rootDirectory === null) return;
 
@@ -256,6 +258,7 @@ document.querySelector('#saveFileBtn').addEventListener('click', () => {
 	saveFile();
 });
 
+// FUNCTION ::: Save file of current tab
 function saveFile() {
 	// if there is tab to save then return;
 	if (tabObjects.length === 0) return;
@@ -712,6 +715,7 @@ function addNewTab(filePath) {
 }
 
 // TODO ::: Warn if unsaved content exists.
+// FUNCTION ::: Function attached Close tab button (X button)
 function closeTab() {
 	let currentTabObject = tabObjects[currentTabIndex];
 
@@ -801,6 +805,7 @@ function statusGraphics(statusString) {
 }
 
 // TODO ::: MAke this work
+// FUNCTION ::: List references button to status bar
 function listReferences() {
 	// get list of referecnes from the tabObject 
 	let references = tabObjects[currentTabIndex].content["reference"]; // This is array
@@ -811,6 +816,7 @@ function listReferences() {
 	});
 }
 
+// FUNCTION ::: Add reference button, called from listReferences function.
 function addRefBtn(fileName, listing) {
 	let currentTabObject = tabObjects[currentTabIndex];
 
@@ -871,6 +877,7 @@ function addRefBtn(fileName, listing) {
 }
 
 // TODO ::: Make this work
+// FUNCTION ::: Hide Current tab, which is called when another tab is clicked.
 function hideCurrentTab() {
 	// Hide screen and toggle color of tab Object
 	tabObjects[currentTabIndex].screen.style.display = "none";
@@ -879,7 +886,7 @@ function hideCurrentTab() {
 	tabObjects[currentTabIndex].tab.parentElement.classList.add(NORMALBG);
 }
 
-// FUNCTION ::: Toggle between editing modes.
+// FUNCTION ::: Toggle between editing different modes ( wysiwyg and markdown mode ).
 function toggleMode() {
 	// if no tab is open then ignore(return).
 	if (currentTabIndex === -1) return;

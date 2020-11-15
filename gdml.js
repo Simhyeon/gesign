@@ -1,4 +1,5 @@
 module.exports = {
+	// FUNCTION :: Create new gdml object
 	newGdml: function() {
 		return {
 			status: "UPTODATE", 
