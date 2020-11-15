@@ -200,8 +200,7 @@ function checkerButton() {
 		}
 	}
 
-	let checkerList = checker.getLevelSortedList();
-	checker.checkDependencies(checkerList);
+	let checkerList = checker.checkDependencies();
 
 	// Sort both checkerList and totlaGdmlList by path(value).
 	// Order is not important, becuase two list will always have same list of paths. 

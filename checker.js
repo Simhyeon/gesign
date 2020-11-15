@@ -185,7 +185,8 @@ module.exports = {
 		// TODO ::: Currently this is getting argument so taht debugging is easy
 		// use of getLevelSortedList function inside of checkDependencies for real production code
 		// FUNCTION ::: Check dependencies and return status list(array) according to dependencies' timestamps and status
-		checkDependencies(values) {
+		checkDependencies() {
+			let values = this.getLevelSortedList();
 			//console.log("VAlue is ");
 			//console.log(JSON.parse(JSON.stringify(values)));
 			values.forEach((item) => {
@@ -219,6 +220,7 @@ module.exports = {
 
 			//console.log("List after checking");
 			//console.log(values);
+			return values;
 		}
 
 		// FUNCTION ::: Get Level sorted list from map's values
