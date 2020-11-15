@@ -4,6 +4,8 @@ const yaml = require('js-yaml');
 const cli = require('./cli');
 const {Config} = require('./config');
 const checker = require("./checker");
+const gdml = require("./gdml");
+const {Checker} = require("./checker");
 
 class ProcessStatus {
 	constructor(doExit, exitStatus) {
@@ -21,11 +23,11 @@ module.exports = {
 			this.rootDirectory = null;
 			this.args = args;
 			this.mainCliOptions = new Array(
-				{shortOp: "-n", longOp: "--new", action: this.newGdmlFile, actionArg: null},
-				{shortOp: "-h", longOp: "--help", action: this.showHelpText, actionArg: null},
-				{shortOp: null, longOp: "--valid", action: this.checkValidation, actionArg: null}, // -v is reserved for version
-				{shortOp: null, longOp: "--init", action: this.initConfig, actionArg: null},
-				{shortOp: null, longOp: "--check", action: this.checkDependencies, actionArg: null}
+				{shortOp: "-n", longOp: "--new", action: this.newGdmlFile.bind(this), actionArg: null},
+				{shortOp: "-h", longOp: "--help", action: this.showHelpText.bind(this), actionArg: null},
+				{shortOp: null, longOp: "--valid", action: this.checkValidation.bind(this), actionArg: null}, // -v is reserved for version
+				{shortOp: null, longOp: "--init", action: this.initConfig.bind(this), actionArg: null},
+				{shortOp: null, longOp: "--check", action: this.checkDependencies.bind(this), actionArg: null}
 			);
 			
 		}
@@ -115,7 +117,7 @@ Options:
 
 		newGdmlFile(name = null) {
 			// new Gdml File represented as javascript object
-			let newGdml = {status: 'UPTODATE', reference: new Array(),body: ""}
+			let newGdml = gdml.newGdml();
 			let fileName = 'new.gdml';
 			if (name !== null) {
 				fileName = name;
@@ -150,11 +152,11 @@ Options:
 			let files = fs.readdirSync(directory);
 			let gdmlList = new Array();
 
-			this.listGdml(gdmlList,config, directory, files);
+			this.listGdml(gdmlList, config, directory, files);
 
 			let checker = new Checker();
 			gdmlList.forEach((item) => {
-				checker.addNode(item.path, item.content["reference"]);
+				checker.addNode(item.path, item.content);
 			})
 			// TODO ::: Foreach add all nodes
 			let checkerList = checker.checkDependencies();
@@ -179,7 +181,6 @@ Options:
 				}
 				return 0;
 			});
-
 
 			// TODO ::: Should change statuses of menu buttons 
 			// In first sight it should be ok becuase fs filewatch will detect status change and will

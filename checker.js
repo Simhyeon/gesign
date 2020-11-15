@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
+const gdml = require('./gdml');
 const OUTDATED = "OUTDATED";
 const UPTODATE = "UPTODATE";
 const NOTCHECKED = "NOTCHECKED";
@@ -12,19 +13,17 @@ let gdmlTags = new Array("status", "reference", "body");
 
 // CLASS ::: Used by Checker class instance
 // Saves values needed for dependencies checking.
+// TODO :: Change this logic
 class NodeObject {
-	constructor(value, references) {
-		var stats = fs.statSync(value);
-		var mtime = stats.mtime;
-
+	constructor(value, content) {
 		this.value = value;
 		this.level = 0;
 		this.status = NOTCHECKED;
-		this.lastModified = mtime; // read from filesystem and check it. 
+		this.lastModified = content["lastModified"]; // read from filesystem and check it. 
 		this.parentSet = new Set();
 		this.childrenSet = new Set();
-		if( references !== null ) {
-			references.forEach((item) => {
+		if( content["reference"] !== null ) {
+			content["reference"].forEach((item) => {
 				this.childrenSet.add(item);
 			});
 		}
@@ -62,18 +61,20 @@ module.exports = {
 		// if not newly created and has multiple children, then set current node's
 		// level to highest child's level + 1
 		// METHOD ::: Add node to nodesMap
-		addNode(value, references) {
+		addNode(value, content) {
 			// Add node if doesn't already exist
 			let targetNode;
 			let createNew = false;
 
+			// If node doesn't exists
 			if(this.getNode(value) === null) {
-				targetNode = new NodeObject(value, references);
+				targetNode = new NodeObject(value, content);
 				this.nodes.set(targetNode.value, targetNode);
 				createNew = true;
 			} else {
 				targetNode = this.getNode(value);
-				targetNode.setChildren(references);
+				targetNode.lastModified = content["lastModified"];
+				targetNode.setChildren(content["reference"]);
 			}
 
 			// There can be three statuses
@@ -96,7 +97,7 @@ module.exports = {
 					}
 					// child node doesn't exist
 					else {
-						childNode = new NodeObject(item, new Array());
+						childNode = new NodeObject(item, gdml.newGdml());
 						childNode.addParent(targetNode.value);
 						nonExistingChildren.push(childNode);
 						this.nodes.set(childNode.value, childNode);
@@ -146,7 +147,6 @@ module.exports = {
 					});
 				}
 			}
-
 		}
 
 		// FUNCTION ::: Increase level by 1 recursively following parents
@@ -200,15 +200,7 @@ module.exports = {
 				else {
 					var isOutdated = Array.from(item.childrenSet).some((child) => {
 						let node = this.getNode(child); // this should not be null becuase childrenSet is added from real Node.
-						
-						//console.log("---");
-						//console.log("Target item : " + item.value);
-						//console.log("Is child node outdated? : " + JSON.parse(JSON.stringify(node.status)))
-						//console.log("Is item older than childNode? : " + JSON.parse(JSON.stringify(item.lastModified.getTime() < node.lastModified.getTime())))
-						//console.log("Item time : " + JSON.parse(JSON.stringify(item.lastModified.getTime())))
-						//console.log("Child time : " + JSON.parse(JSON.stringify(node.lastModified.getTime())))
-						//console.log("---");
-						return (node.status == OUTDATED || item.lastModified.getTime() < node.lastModified.getTime());
+						return (node.status == OUTDATED || item.lastModified < node.lastModified);
 					});
 					if (isOutdated) item.status = OUTDATED;
 					else item.status = UPTODATE;

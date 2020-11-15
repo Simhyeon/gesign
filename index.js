@@ -11,6 +11,7 @@ const Checker = require('./checker').Checker;
 const watch = require("node-watch");
 const _ = require("lodash");
 const cli = require("./cli");
+const gdml = require('./gdml');
 const {Config} = require("./config");
 const CliOption = cli.CliOption;
 
@@ -122,7 +123,18 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	currentTabIndex = tabObjects.length;
 	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
 
-	var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: true, path: path.join(rootDirectory, 'new.gdml'), refs: new Set() ,content: {status: UPTODATE, reference: new Array() ,body: ""}, meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
+	var tabObject = {
+		contentStatus: SAVED, 
+		refStatus: SAVED, 
+		manualSave: true, 
+		path: path.join(rootDirectory, 'new.gdml'), 
+		refs: new Set() ,
+		content: gdml.newGdml(),
+		meta: metaElem, 
+		screen: editorScreenElem, 
+		tab: null, 
+		editor: editorInstance
+	};
 	tabObjects.push(tabObject);
 
 	// If editor's content changes and content is different from original one
@@ -193,7 +205,7 @@ function checkerButton() {
 			return;
 		}
 		try {
-			checker.addNode(totalGdmlList[i].path, gdml["reference"]);
+			checker.addNode(totalGdmlList[i].path, gdml);
 		} catch (e) {
 			alert("Mutual reference detected from file.\n" + e);
 			return;
@@ -252,13 +264,12 @@ function saveFile() {
 	if(currentTabObject.contentStatus !== UNSAVED && currentTabObject.refStatus !== UNSAVED) return; // if file is not unsaved then skip operation
 
 	// Update content body with editor's content
+	currentTabObject.content["lastModified"] = Date.now();
 	currentTabObject.content["body"] = currentTabObject.editor.getMarkdown().trim();
 	currentTabObject.content["reference"] = Array.from(currentTabObject.refs);
 	// If not manualSave directrly save without further procedure
 	if (!currentTabObject.manualSave) {
 		fs.writeFileSync(currentTabObject.path, yaml.safeDump(currentTabObject.content), 'utf8');
-		// TODO ::: Not necessarily needed.
-		//alert("Saved successfully");
 
 		// set status to saved because it is getting saved. 
 		currentTabObject.contentStatus = SAVED;
