@@ -531,7 +531,7 @@ function listFile(root, fileName, parentElement) {
 		event.dataTransfer.setData('text/plain', event.currentTarget.dataset.path);
 	});
 
-	elem.classList.add("fileBtn","rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "m-2");
+	elem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "m-2", "overflow-x-hidden");
 	elem.draggable = true;
 	parentElement.appendChild(elem);
 	// Add value to array(list) so that dependency checker can do his job.
@@ -581,8 +581,7 @@ function loadGdml(filePath) {
 // This function is called when sideMenu button or tab button is clicked.
 function loadGdmlToEditor(event) {
 
-	// TODO ::: If tab is already open then copy tab data into editorInstance.
-	// Load file from fs 
+	// If tab is already open then copy tab data into editorInstance.
 	let tabIndex = Number(event.currentTarget.dataset.index);
 	// If tabIndex is -1 it might be because listmenu button is clicked
 	// In which case list menu doesn't have index value
@@ -591,10 +590,11 @@ function loadGdmlToEditor(event) {
 
 	// If file is already open thus tab exists
 	if(tabIndex !== -1){
-		// Hide current tab
+		// Hide CurrentTab
 		hideCurrentTab();
 
 		// Change currentTabIndex
+		let indexCache = currentTabIndex;
 		currentTabIndex = tabIndex;
 		// And show selected tab
 		tabObjects[currentTabIndex].screen.style.display = "";
@@ -603,15 +603,19 @@ function loadGdmlToEditor(event) {
 		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
 		// Update Status Bar
 		statusGraphics(tabObjects[currentTabIndex].content["status"]);
+
+		if (tabObjects[indexCache].temp) {
+			closeTab(tabObjects[indexCache].path);
+		}
+
 		return;
 	}
 
-	// When tab is opened and user is trying to open another tab with another file
-	// Hide currently visible tab. or delete if current tab is temporary
-	if(currentTabIndex != -1) {
+	// At least one tab is opened and user is trying to open another tab with another file
+	// Hide currently visible tab or delte if tab is temporary.
+	if(currentTabIndex !== -1) {
 		if (tabObjects[currentTabIndex].temp) {
-			// TODO :: Make this delted
-			//deleteTab();
+			closeTab(tabObjects[currentTabIndex].path);
 		} else {
 			hideCurrentTab();
 		}
@@ -620,7 +624,7 @@ function loadGdmlToEditor(event) {
 
 	// Declaring filePath
 	let filePath = event.currentTarget.dataset.path;
-	// If not tab is open, then read file and paste data into newly created editor. 
+	// If no tab is open, then read file and paste data into newly created editor. 
 	fs.readFile(filePath, 'utf8', (err, data) => {
 		if (err) {
 			alert("Failed to read file");
@@ -639,9 +643,7 @@ function loadGdmlToEditor(event) {
 		currentTabIndex = tabObjects.length;
 		let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
 
-		// DEBUG TODO ::: first argument should be true not false
-		// Currently set to false for debugging
-		var tabObject = newTabObject(false, SAVED, SAVED, false, filePath, new Set() , yaml.safeLoad(data, 'utf8'), metaElem, editorScreenElem, null, editorInstance);
+		var tabObject = newTabObject(true, SAVED, SAVED, false, filePath, new Set() , yaml.safeLoad(data, 'utf8'), metaElem, editorScreenElem, null, editorInstance);
 
 		// LEGACY ::: tabObject before newTabObject method should be here for reference
 		//var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: false, path: filePath, ref: new Set() ,content: yaml.safeLoad(data, 'utf8'), meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
@@ -658,12 +660,14 @@ function loadGdmlToEditor(event) {
 			if (currentTab.content["body"] !== currentTab.editor.getMarkdown().trim()) {
 				currentTab.contentStatus = UNSAVED;
 				currentTab.tab.textContent = path.basename(currentTab.path) + UNSAVEDSYMBOL;
+				if (currentTab.temp) currentTab.temp = false;
 			} else { // both contents are same
 				currentTab.contentStatus = SAVED;
 				if (currentTab.refStatus === SAVED) {
 					currentTab.tab.textContent = path.basename(currentTab.path);
 				}
 			}
+
 		});
 
 		// Add new Tab 

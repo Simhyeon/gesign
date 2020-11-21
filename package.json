@@ -4,10 +4,10 @@
   "description": "Game Document editor",
   "main": "main.js",
   "build": {
-	  "appId": "xyz.siomoncreek.gesign",
-	  "mac": {
-		"category": "public.app-category.developer-tools"
-	  }
+    "appId": "xyz.siomoncreek.gesign",
+    "mac": {
+      "category": "public.app-category.developer-tools"
+    }
   },
   "scripts": {
     "start": "electron ."
