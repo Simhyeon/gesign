@@ -4,6 +4,9 @@ const {AppOption} = require('./appOption');
 
 const {app, BrowserWindow} = require("electron");
 
+// TESTING
+app.disableHardwareAcceleration();
+
 // VARIABLE ::: Local window variable
 let win;
 

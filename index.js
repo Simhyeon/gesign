@@ -25,7 +25,7 @@ let rootDirectory = null;
 let totalGdmlList = new Array();
 
 // VARAIBLE ::: Array that stores object of following properties
-// {contentStatus: string, refStatus: String ,manualSave: boolean, path: string, refs: [], content: string(yaml),meta: domElement ,screen: domElement, tab: domElement, editor: ToastEditorInstance}
+// {temp : boolean, contentStatus: string, refStatus: String , resetted: boolean ,manualSave: boolean, path: string, refs: [], content: string(yaml),meta: domElement ,screen: domElement, tab: domElement, editor: ToastEditorInstance}
 let tabObjects = new Array(); // This is list of opened tabs's which has a data of yaml string
 
 // VARAIBLE ::: Index that points to the currentTabObject
@@ -122,20 +122,22 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	editorScreenElem.style.display = "";
 
 	currentTabIndex = tabObjects.length;
-	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
+	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem, config.content["startMode"]);
 
-	var tabObject = {
-		contentStatus: SAVED, 
-		refStatus: SAVED, 
-		manualSave: true, 
-		path: path.join(rootDirectory, 'new.gdml'), 
-		refs: new Set() ,
-		content: gdml.newGdml(),
-		meta: metaElem, 
-		screen: editorScreenElem, 
-		tab: null, 
-		editor: editorInstance
-	};
+	var tabObject = newTabObject(false, SAVED, SAVED, true, path.join(rootDirectory, 'new.gdml'), new Set(), gdml.newGdml(), metaElem, editorScreenElem, null, editorInstance);
+	// LEGACY :::  
+	//var tabObject = {
+		//contentStatus: SAVED, 
+		//refStatus: SAVED, 
+		//manualSave: true, 
+		//path: path.join(rootDirectory, 'new.gdml'), 
+		//refs: new Set() ,
+		//content: gdml.newGdml(),
+		//meta: metaElem, 
+		//screen: editorScreenElem, 
+		//tab: null, 
+		//editor: editorInstance
+	//};
 	tabObjects.push(tabObject);
 
 	// If editor's content changes and content is different from original one
@@ -155,7 +157,8 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	});
 
 	// Add new Tab 
-	let newTab = addNewTab("new.gdml");
+	//let newTab = addNewTab("new.gdml");
+	let newTab = addNewTab("new*.gdml");
 	tabObject.tab = newTab;
 
 	// Set highlight color
@@ -605,9 +608,14 @@ function loadGdmlToEditor(event) {
 	}
 
 	// When tab is opened and user is trying to open another tab with another file
-	// Hide currently visible tab.
+	// Hide currently visible tab. or delete if current tab is temporary
 	if(currentTabIndex != -1) {
-		hideCurrentTab();
+		if (tabObjects[currentTabIndex].temp) {
+			// TODO :: Make this delted
+			//deleteTab();
+		} else {
+			hideCurrentTab();
+		}
 	} // else if tab is not opened at all don't have to hide anything.
 
 
@@ -629,7 +637,14 @@ function loadGdmlToEditor(event) {
 		// CurrentTab Index should be equal to length because in this line length is not added by 1.
 		currentTabIndex = tabObjects.length;
 		let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
-		var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: false, path: filePath, ref: new Set() ,content: yaml.safeLoad(data, 'utf8'), meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
+
+		// DEBUG TODO ::: first argument should be true not false
+		// Currently set to false for debugging
+		var tabObject = newTabObject(false, SAVED, SAVED, false, filePath, new Set() , yaml.safeLoad(data, 'utf8'), metaElem, editorScreenElem, null, editorInstance);
+
+		// LEGACY ::: tabObject before newTabObject method should be here for reference
+		//var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: false, path: filePath, ref: new Set() ,content: yaml.safeLoad(data, 'utf8'), meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
+		
 		tabObjects.push(tabObject);
 		editorInstance.setMarkdown(tabObject.content["body"], false);
 		editorInstance.changeMode(config.content["startMode"]);
@@ -702,7 +717,7 @@ function addNewTab(filePath) {
 	closeButton.addEventListener('click', (event) => {
 		// Get parent target and close
 		// Also stop propagation so that clicking parent button should not be triggered.
-		closeTab();
+		closeTab(event.currentTarget.previousSibling.dataset.path);
 		event.stopPropagation();
 	});
 
@@ -716,34 +731,52 @@ function addNewTab(filePath) {
 
 // TODO ::: Warn if unsaved content exists.
 // FUNCTION ::: Function attached Close tab button (X button)
-function closeTab() {
-	let currentTabObject = tabObjects[currentTabIndex];
+function closeTab(path) {
+	console.log("Path value to delete is " + path);
+	let targetTabObject = tabObjects.find(object => object.tab.dataset.path === path);
+	let index = tabObjects.indexOf(targetTabObject);
 
-	if (currentTabObject.refStatus !== SAVED || currentTabObject.contentStatus !== SAVED) {
+	if (targetTabObject.refStatus !== SAVED || targetTabObject.contentStatus !== SAVED) {
 		if (!confirm("Unsaved content exists. Do exit?")) return;
 	}
 
-	currentTabObject.tab.parentElement.remove();
-	currentTabObject.screen.remove();
-	currentTabObject.meta.remove();
+	targetTabObject.tab.parentElement.remove();
+	targetTabObject.screen.remove();
+	targetTabObject.meta.remove();
 
 	// Delete tabObject from array
-	tabObjects.splice(currentTabIndex, 1);
+	tabObjects.splice(index, 1);
 
 	// if other tabs are exsiting
-	if (tabObjects.length !== 0) {
-		if (currentTabIndex - 1 > -1) {
+	// if tabObjectslength === 0 then, currently no object is present as data or element.
+	// if not then there is either data or element.
+	if (tabObjects.length !== 0) { 
+		// if Index is bigger than currentTabIndex; Do nothing 
+		//
+		// if Index is same with currentTabIndex;
+		if (index == currentTabIndex) {
+			// if index is bigger than 0 decrease by 1
+			// else if index === 0 then, don't need to change index.
+			// Other remaining element should be in 0 index
+			if (index > 0) {
+				currentTabIndex -= 1;
+			}
+			
+			// Show remaining tab
+			tabObjects[currentTabIndex].screen.style.display = "";
+			tabObjects[currentTabIndex].meta.style.display = "";
+			tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
+			tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
+
+			statusGraphics(tabObjects[index].content["status"]);
+		}
+		// if Index is lower than currentTabIndex
+		// Decrease by 1 because currentTabIndex is logically changed by deletion.
+		if (index < currentTabIndex) {
 			currentTabIndex -= 1;
 		}
-		// Show prior tab
-		tabObjects[currentTabIndex].screen.style.display = "";
-		tabObjects[currentTabIndex].meta.style.display = "";
-		tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
-		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
-
-		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 	} 
-	// Tab object's length is 0 so reset tabIndex to -1
+	//if tabObjects' length i 0 then rest currentTabIndex (which is setting to -1)
 	else {
 		currentTabIndex = -1;
 	}
@@ -769,13 +802,13 @@ function toggleChildren(event) {
 
 // FUNCTION ::: Initiate ToastEditorInstance with given new Id.
 // if duplicate id exists then editor would not work properly.
-function initEditor(newId, element) {
+function initEditor(newId, element, mode="wysiwyg") {
 	element.id = newId;
 	var editor = new Editor({
 		el: element,
 		previewStyle: 'tab',
 		height: '100%',
-		initialEditType: 'wysiwyg',
+		initialEditType: mode,
 		language: 'ko'
 	});
 	editor.getHtml();
@@ -874,6 +907,22 @@ function addRefBtn(fileName, listing) {
 	divElem.appendChild(elem);
 	divElem.appendChild(closeButton);
 	currentTabObject.meta.querySelector("#references").appendChild(divElem);
+}
+
+function newTabObject(temp, contentStatus, refStatus, manualSave, path, ref, content, meta, screen, tab, editor) {
+	return {
+		temp: temp,
+		contentStatus: contentStatus, 
+		refStatus: refStatus, 
+		manualSave: manualSave, 
+		path: path, 
+		ref: ref,
+		content: content, 
+		meta: meta, 
+		screen: screen, 
+		tab: tab, 
+		editor: editor
+	};
 }
 
 // TODO ::: Make this work

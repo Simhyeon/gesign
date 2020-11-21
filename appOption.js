@@ -133,7 +133,10 @@ Options:
 			}
 			//create new file named gdml
 			try {
-				let fullPath = path.join(process.cwd(), fileName)
+				let fullPath = name;
+				if (!path.isAbsolute(name)) {
+					fullPath = path.join(process.cwd(), fileName)
+				}
 				fs.writeFileSync(fullPath, yaml.safeDump(newGdml));
 			} catch (err) {
 				console.log("Failed to create file with error : " + err);
