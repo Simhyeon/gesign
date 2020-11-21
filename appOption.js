@@ -106,8 +106,11 @@ Options:
 			if (dirName !== null && !path.isAbsolute(dirName)) 
 				fileName = path.join(dirName, fileName);
 
+			// If no directory name is given or directory name is ./ or .
+			// Make it current working directory.
+			// This might be not necessary because node is handling custom annotation for current directory.
 			if (dirName === null || dirName == "./" || dirName == ".")
-				fileName = path.join(process.cwd(), fileName);
+				fileName = process.cwd();
 
 			try {
 				if (!fs.existsSync(fileName)) {
@@ -134,6 +137,8 @@ Options:
 			//create new file named gdml
 			try {
 				let fullPath = name;
+				// if given name is not absolute path
+				// concat with current process value
 				if (!path.isAbsolute(name)) {
 					fullPath = path.join(process.cwd(), fileName)
 				}
@@ -152,14 +157,14 @@ Options:
 				return new ProcessStatus(true, 0);
 			}
 
-			let config = new Config();
-			config.readFromFile(path.join(directory, "gesign_config.json"));
-
-
-			// TODO ::: If directory is relative then make it to absolute 
+			// If directory is relative then make it to absolute 
 			if (!path.isAbsolute(directory)) {
 				directory = path.join(process.cwd(), directory);
 			}
+
+			let config = new Config();
+			config.readFromFile(path.join(directory, "gesign_config.json"));
+
 
 			this.rootDirectory = directory;
 

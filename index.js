@@ -124,7 +124,7 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	currentTabIndex = tabObjects.length;
 	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem, config.content["startMode"]);
 
-	var tabObject = newTabObject(false, SAVED, SAVED, true, path.join(rootDirectory, 'new.gdml'), new Set(), gdml.newGdml(), metaElem, editorScreenElem, null, editorInstance);
+	var tabObject = newTabObject(false, SAVED, SAVED, true, path.join(rootDirectory, 'new*.gdml'), new Set(), gdml.newGdml(), metaElem, editorScreenElem, null, editorInstance);
 	// LEGACY :::  
 	//var tabObject = {
 		//contentStatus: SAVED, 
@@ -138,6 +138,8 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 		//tab: null, 
 		//editor: editorInstance
 	//};
+	// IMPORTANT ::: push should be done before other tab related  
+	// becuase other operations assume that length has changed already.
 	tabObjects.push(tabObject);
 
 	// If editor's content changes and content is different from original one
@@ -157,8 +159,7 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	});
 
 	// Add new Tab 
-	//let newTab = addNewTab("new.gdml");
-	let newTab = addNewTab("new*.gdml");
+	let newTab = addNewTab("unnamed*.gdml");
 	tabObject.tab = newTab;
 
 	// Set highlight color
@@ -167,11 +168,6 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 
 	// set status graphic
 	statusGraphics(tabObjects[currentTabIndex].content["status"]);
-	// TODO ::: COMPLETE THIS
-	// Don't need this.
-	//listReferences();
-
-	//let refDiv = metaElem.querySelector("#references");
 	// Add drag drop event to references
 	metaElem.addEventListener('dragover', (event) => {
 		event.preventDefault();
@@ -191,7 +187,6 @@ function checkerButton() {
 	if (rootDirectory === null) return;
 
 	// If unsaved tab exists dependency check cannot happen
-	// TODO ::: If unsaved tabObjects exist then return and show dialog that it is not availble;
 	var checkUnsaved = false;
 	tabObjects.forEach((tab) => {
 		if (tab.contentStatus === UNSAVED || tab.refStatus === UNSAVED) checkUnsaved = true;
@@ -203,7 +198,7 @@ function checkerButton() {
 
 	let checker = new Checker();
 	// Make NodeObject from totalGdmlList's item's
-	for (var i = 0, len = totalGdmlList.length; i < len; i++) {
+	for (let i = 0, len = totalGdmlList.length; i < len; i++) {
 		let gdml = loadGdml(totalGdmlList[i].path);
 		if (gdml == null) {
 			console.error("GDML IS null;");
@@ -244,7 +239,7 @@ function checkerButton() {
 	// In first sight it should be ok becuase fs filewatch will detect status change and will
 	// read from root Directory.
 	// Should change statues of opened tabs
-	for (var j = 0, leng = totalGdmlList.length; j < leng; j++) {
+	for (let j = 0, leng = totalGdmlList.length; j < leng; j++) {
 		// If Status has changed after dependency check, apply changes to file
 		// With this approcah caching(memory usage) is minified and I/O is maximized.
 		if (totalGdmlList[j].status !== checkerList[j].status) {
@@ -267,6 +262,7 @@ function saveFile() {
 	if (tabObjects.length === 0) return;
 	// Get currentTabObject for easy reading
 	let currentTabObject = tabObjects[currentTabIndex];
+	console.log(currentTabObject);
 	if(currentTabObject.contentStatus !== UNSAVED && currentTabObject.refStatus !== UNSAVED) return; // if file is not unsaved then skip operation
 
 	// Update content body with editor's content
@@ -319,7 +315,6 @@ document.querySelector("#openDirBtn").addEventListener('click', () => {
 	});
 });
 
-// TODO ::: Completely remove current tabObjects list.
 // FUNCTION ::: Set root directory and set other variables accordingly.
 function setRootDirectory(directory) {
 
@@ -416,7 +411,7 @@ function setRootDirectory(directory) {
 							tabObject.editor.setMarkdown(readContent["body"], false);
 						}
 
-						// TODO ::: Get References from list
+						// Get References from list
 						readContent["reference"].forEach((ref) => {
 							if (!tabObject.refs.has(ref)) {
 								addRefBtn(ref, true);
@@ -527,6 +522,7 @@ function listFile(root, fileName, parentElement) {
 
 	elem.textContent = fileName;
 	elem.dataset.path = fullPath;
+	elem.dataset.index = -1;
 	elem.addEventListener('click', loadGdmlToEditor);
 
 	elem.addEventListener("dragstart", (event) => {
@@ -587,8 +583,11 @@ function loadGdmlToEditor(event) {
 
 	// TODO ::: If tab is already open then copy tab data into editorInstance.
 	// Load file from fs 
-	let filePath = event.currentTarget.dataset.path;
-	let tabIndex = isTabPresent(filePath);
+	let tabIndex = Number(event.currentTarget.dataset.index);
+	// If tabIndex is -1 it might be because listmenu button is clicked
+	// In which case list menu doesn't have index value
+	if (tabIndex === -1) 
+		tabIndex = isTabPresent(event.currentTarget.dataset.path);
 
 	// If file is already open thus tab exists
 	if(tabIndex !== -1){
@@ -619,6 +618,8 @@ function loadGdmlToEditor(event) {
 	} // else if tab is not opened at all don't have to hide anything.
 
 
+	// Declaring filePath
+	let filePath = event.currentTarget.dataset.path;
 	// If not tab is open, then read file and paste data into newly created editor. 
 	fs.readFile(filePath, 'utf8', (err, data) => {
 		if (err) {
@@ -707,6 +708,7 @@ function addNewTab(filePath) {
 	divElem.classList.add("blankButton", "bg-white");
 
 	btnElem.dataset.path = filePath;
+	btnElem.dataset.index = tabObjects.length - 1;
 	btnElem.textContent = path.basename(filePath);
 	btnElem.addEventListener('click', loadGdmlToEditor);
 
@@ -731,8 +733,8 @@ function addNewTab(filePath) {
 
 // TODO ::: Warn if unsaved content exists.
 // FUNCTION ::: Function attached Close tab button (X button)
+// Deletion is determined with path not index.
 function closeTab(path) {
-	console.log("Path value to delete is " + path);
 	let targetTabObject = tabObjects.find(object => object.tab.dataset.path === path);
 	let index = tabObjects.indexOf(targetTabObject);
 
@@ -774,6 +776,13 @@ function closeTab(path) {
 		// Decrease by 1 because currentTabIndex is logically changed by deletion.
 		if (index < currentTabIndex) {
 			currentTabIndex -= 1;
+		}
+
+		// Decrease all tab's index by 1 which index data is bigger than 'index'
+		// let i is index not index + 1 becuase 'index' is former target value to close
+		// In here targetObject is already destroyed so index points to after object.
+		for (let i = index; i < tabObjects.length; i++) {
+			tabObjects[i].tab.dataset.index = Number(tabObjects[i].tab.dataset.index) - 1;
 		}
 	} 
 	//if tabObjects' length i 0 then rest currentTabIndex (which is setting to -1)
@@ -909,14 +918,14 @@ function addRefBtn(fileName, listing) {
 	currentTabObject.meta.querySelector("#references").appendChild(divElem);
 }
 
-function newTabObject(temp, contentStatus, refStatus, manualSave, path, ref, content, meta, screen, tab, editor) {
+function newTabObject(temp, contentStatus, refStatus, manualSave, path, refs, content, meta, screen, tab, editor) {
 	return {
 		temp: temp,
 		contentStatus: contentStatus, 
 		refStatus: refStatus, 
 		manualSave: manualSave, 
 		path: path, 
-		ref: ref,
+		refs: refs,
 		content: content, 
 		meta: meta, 
 		screen: screen, 
