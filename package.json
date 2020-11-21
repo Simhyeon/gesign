@@ -2,7 +2,7 @@
   "name": "gesign",
   "version": "0.0.1",
   "description": "Game Document editor",
-  "main": "main.js",
+  "main": "src/main.js",
   "build": {
     "appId": "xyz.siomoncreek.gesign",
     "mac": {
@@ -10,7 +10,7 @@
     }
   },
   "scripts": {
-    "start": "electron ."
+    "start": "electron ./src"
   },
   "keywords": [],
   "author": "Simon Creek",
