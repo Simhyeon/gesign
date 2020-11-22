@@ -264,5 +264,18 @@ module.exports = {
 			}
 		});
 		return isValid;
+	},
+	IsValidGdmlString: function(content) {
+		let isValid = true;
+		if (content === null || content === undefined) {
+			return false;
+		}
+
+		gdmlTags.forEach((tag) => {
+			if (content[tag] === null || content[tag] === undefined ) {
+				isValid = false;
+			}
+		});
+		return isValid;
 	}
 }
