@@ -7,16 +7,19 @@ const path = require('path');
 const fs = require('fs');
 const yaml = require('js-yaml');
 const Editor = require('@toast-ui/editor');
-const Checker = require('./checker').Checker;
+const checker = require("./checker");
+const {Checker} = require('./checker');
 const watch = require("node-watch");
 const _ = require("lodash");
 const cli = require("./cli");
 const gdml = require('./gdml');
 const {Config} = require("./config");
+const {FileTree} = require("./filetree");
 const CliOption = cli.CliOption;
 
 /// HEADER ::: Declare class instance to use 
 let watcher = null;
+let fileTree;
 
 // VARAIBLE ::: Root direoctry given by user as a root for recursive file detection.
 let rootDirectory = null;
@@ -345,12 +348,11 @@ function setRootDirectory(directory) {
 		var divElem = document.createElement('div');
 		var dirElem = document.createElement('div');
 		divElem.classList.add("border-gray-700", "border-b", "flex", "flex-col");
-		dirElem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "m-2");
+		dirElem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "my-1");
 		dirElem.textContent = "<" + path.basename(directory) + ">";
 		sideMenu.appendChild(divElem);
 		divElem.appendChild(dirElem);
 
-		console.log("Log before listing");
 		// Set variable that decided whether fold or not.
 		doFoldDirectory = (rootDirectory === null || rootDirectory !== directory);
 
@@ -430,6 +432,9 @@ function setRootDirectory(directory) {
 	// Update root directory
 	rootDirectory = directory;	
 
+	// DEBUG ::: 
+	fileTree = new FileTree(rootDirectory);
+
 	// List All menu buttons in side bar
 	listMenuButtons(directory , files, sideMenu, doFoldDirectory);
 
@@ -444,8 +449,36 @@ function setRootDirectory(directory) {
 	// Set new file watcher for root direoctory
 	watcher = watch(rootDirectory, {recurisve: true}, (evt, name) => {
 		// If changed file is gdml then reload the whole project
-		if (path.extname(name).toLowerCase() === ".gdml") {
-			setRootDirectory(rootDirectory);
+		if (evt == 'update') {
+			if (path.extname(name).toLowerCase() === ".gdml") {
+				// Change this into checkNode and add Node to specific node.
+				let result = fileTree.getNode(name);
+				if (result === undefined) {
+					alert("Failed to resolve file hierarchy. Please reload directory.");
+					return;
+				}
+
+				// if node already exists don't do anything
+				if (result) {
+					return;
+				} 
+				// If node doesn't exists then create new node.
+				else {
+					let newElem = listMenuButton();
+				}
+
+				fileTree.pushNode(name, newElement);
+				// TODO ::: Update Listmenus;
+				// if changed file is in tabs. Update tab.
+				setRootDirectory(rootDirectory);
+			}
+		} else if (evt == 'remove') { 
+			console.log("Remove detected");
+			console.log(name);
+			let extName =path.extname(name).toLowerCase();
+			if (extName === ".gdml" || extName === '') { // either gdml or directory
+				fileTree.removeNode(name);
+			}
 		}
 	});
 }
@@ -511,11 +544,22 @@ function listMenuButtons(root, files, parentElement, foldDirectory = false) {
 }
 
 // FUNCTION ::: Create File menu button
+// TODO ::: Create divElem wrapper and set elem as a child
+// Append a indicator div under divElem
 function listFile(root, fileName, parentElement) {
-	var elem = document.createElement('button');
-
 	let fullPath = path.join(root , fileName);
 	let fileYaml = yaml.load(fs.readFileSync(fullPath), 'utf8'); // this should not fail becuase it was read from readdirSync
+	
+	// check File validation
+	// If not valid gdml file then return.
+	if (!checker.IsValidGdmlString(fileYaml)) {
+		return;
+	}
+
+	var divElem = document.createElement('div');
+	var elem = document.createElement('button');
+	var indElem = document.createElement('i'); // indicator for statuses
+
 	let menuColor = UNDEFINEDCOLOR; // Undefined color
 	if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
 	else menuColor = UPTODATECOLOR;
@@ -531,11 +575,13 @@ function listFile(root, fileName, parentElement) {
 		event.dataTransfer.setData('text/plain', event.currentTarget.dataset.path);
 	});
 
-	elem.classList.add("rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "m-2", "overflow-x-hidden");
+	elem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "mb-1", "overflow-x-hidden");
 	elem.draggable = true;
 	parentElement.appendChild(elem);
 	// Add value to array(list) so that dependency checker can do his job.
 	totalGdmlList.push({ path: fullPath, status: fileYaml["status"]});
+
+	fileTree.initNode(fullPath, elem);
 }
 
 // FUNCTION ::: Create directory menu button
@@ -544,13 +590,16 @@ function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 	var divElem = document.createElement('div');
 	var dirElem = document.createElement('button');
 	divElem.classList.add("border-gray-700", "border-t", "border-b", "flex", "flex-col");
-	dirElem.classList.add("dirButton", "rounded", "font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "m-2");
+	dirElem.classList.add("dirButton","font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "mb-1");
 	let fullPath = path.join(root, dirName);
 	dirElem.textContent = "↓" + dirName;
 	dirElem.dataset.path = fullPath;
 	dirElem.addEventListener('click', toggleChildren);
 	parentElement.appendChild(divElem);
 	divElem.appendChild(dirElem);
+
+	fileTree.initNode(fullPath, divElem);
+
 	fs.readdir(fullPath, (err, files) => {
 		if(err) {
 			console.log("Failed to read recursive files in directory");
