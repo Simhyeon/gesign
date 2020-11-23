@@ -595,7 +595,7 @@ function listFile(root, fileName, parentElement) {
 		event.dataTransfer.setData('text/plain', event.currentTarget.dataset.path);
 	});
 
-	elem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "mb-1", "overflow-x-hidden");
+	elem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "mb-1");
 	elem.draggable = true;
 	parentElement.appendChild(elem);
 	// Add value to array(list) so that dependency checker can do his job.
@@ -1068,14 +1068,48 @@ function toggleMode() {
 	}
 }
 
+
+// REFERENCE :::  Font sizes of toast ui editor
+// default font size is 13px
+// h1 : 24px / division : 1.846153846 => 1.846rem
+// h2 : 22px / division : 1.692307692 => 1.692rem
+// h3 : 20px / division : 1.538461538 => 1.538rem
+// h4 : 18px / division : 1.384615385 => 1.385rem
+// h5 : 16px / division : 1.230769231 => 1.231rem
+// h6 : 14px / division : 1.076923077 => 1.077rem
+
 // FUNCTION ::: Change Font size of editor.
-// This function is especially limited to Toast Ui Editor and webkit engine (Namely chrome) 
+// This function is especially limited to Toast Ui Editor 
 function setFontSize() {
+	let multiplier = 1.0;
 	if (config.content["fontSize"] === "small") {
-		document.querySelector('style').innerHTML =  FONTCLASSES + "{font-size: 1.3rem}";
+		multiplier = 1.0;
 	} else if (config.content["fontSize"] === "middle") {
-		document.querySelector('style').innerHTML = FONTCLASSES + "{font-size: 1.5rem}";
+		multiplier = 1.1;
 	} else if (config.content["fontSize"] === "large") {
-		document.querySelector('style').innerHTML = FONTCLASSES + "{font-size: 1.8rem}";
+		multiplier = 1.2;
 	}
+	// No indent for better eading
+	document.querySelector('style').innerHTML = 
+`.CodeMirror-lines, .tui-editor-contents {
+	font-size : ${ multiplier }rem !important;
+}
+.tui-md-heading {
+	font-size : ${ 1.846 * multiplier}rem !important;
+}
+.tui-md-heading2 {
+	font-size : ${ 1.692 * multiplier}rem !important;
+}
+.tui-md-heading3 {
+	font-size : ${ 1.538 * multiplier}rem !important;
+}
+.tui-md-heading4 {
+	font-size : ${ 1.385 * multiplier}rem !important;
+}
+.tui-md-heading5 {
+	font-size : ${ 1.231 * multiplier}rem !important;
+}
+.tui-md-heading6 {
+	font-size : ${ 1.077 * multiplier}rem !important;
+}`;
 }
