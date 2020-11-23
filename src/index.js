@@ -18,8 +18,9 @@ const {FileTree} = require("./filetree");
 const CliOption = cli.CliOption;
 
 /// HEADER ::: Declare class instance to use 
-let watcher = null;
-let fileTree;
+let watcher = new Array();
+let prevFileTree = null;
+let fileTree = null;
 
 // VARAIBLE ::: Root direoctry given by user as a root for recursive file detection.
 let rootDirectory = null;
@@ -356,6 +357,17 @@ function setRootDirectory(directory) {
 		// Set variable that decided whether fold or not.
 		doFoldDirectory = (rootDirectory === null || rootDirectory !== directory);
 
+		// If watch already exists then it means that it is not the first time function called.
+		// remove prior watcher and all listmenuButtons's children;
+		// TODO :: MAke this watcher list and close all watcher lists.
+		if (watcher.length !== 0) {
+			// Remove watcher
+			watcher.forEach(item => {
+				item.close();
+			});
+			watcher = new Array();
+		}
+
 	} catch(error) {
 		return console.error('Unable to scan directory: ' + error);
 	}
@@ -433,54 +445,55 @@ function setRootDirectory(directory) {
 	rootDirectory = directory;	
 
 	// DEBUG ::: 
+	// Cache fileTree becuase retaining fold status
+	// Requires previous fold status from previous FileTree
+	// Such process can be optimized by ignoring folding check when root directory has changed.
+	prevFileTree = fileTree;
 	fileTree = new FileTree(rootDirectory);
+	console.log(prevFileTree);
+	console.log(fileTree);
+	//console.log(JSON.parse(JSON.stringify(prevFileTree)));
+	//console.log(JSON.parse(JSON.stringify(fileTree)));
 
 	// List All menu buttons in side bar
 	listMenuButtons(directory , files, sideMenu, doFoldDirectory);
 
-	// If watch already exists then it means that it is not the first time function called.
-	// remove prior watcher and all listmenuButtons's children;
-	if (watcher !== null) {
-		// Remove watcher
-		watcher.close();
-		watcher = null;
-	}
+	// Add watcher for root directory
+	watcher.push(
+		watch(rootDirectory, (evt, name) => {
+			watchFileChange(rootDirectory, evt, name);
+		})
+	); 
+}
 
-	// Set new file watcher for root direoctory
-	watcher = watch(rootDirectory, {recurisve: true}, (evt, name) => {
-		// If changed file is gdml then reload the whole project
-		if (evt == 'update') {
-			if (path.extname(name).toLowerCase() === ".gdml") {
-				// Change this into checkNode and add Node to specific node.
-				let result = fileTree.getNode(name);
-				if (result === undefined) {
+function watchFileChange(directory, evt, name) {
+	// If changed file is gdml then reload the whole project
+	if (evt == 'update') {
+		console.log("Detected file change of : " + name);
+		let extName = path.extname(name).toLowerCase();
+		if (extName === ".gdml" || extName === "") {
+			// If setting directory is not the first time
+			if (prevFileTree !== null) {
+				// Result is either true, false or null.
+				// Null means given name(path) doesn't match given root directory.
+				let result = prevFileTree.getNode(name);
+				if (result === null) {
 					alert("Failed to resolve file hierarchy. Please reload directory.");
 					return;
 				}
 
-				// if node already exists don't do anything
+				// if node already exists dont read root directory
 				if (result) {
+					// TODO ::: Check if content has changed.
 					return;
 				} 
-				// If node doesn't exists then create new node.
-				else {
-					let newElem = listMenuButton();
-				}
+			}
 
-				fileTree.pushNode(name, newElement);
-				// TODO ::: Update Listmenus;
-				// if changed file is in tabs. Update tab.
-				setRootDirectory(rootDirectory);
-			}
-		} else if (evt == 'remove') { 
-			console.log("Remove detected");
-			console.log(name);
-			let extName =path.extname(name).toLowerCase();
-			if (extName === ".gdml" || extName === '') { // either gdml or directory
-				fileTree.removeNode(name);
-			}
+			console.log("Setting root directory");
+			// if file or directory has changed then reload root directory.
+			setRootDirectory(rootDirectory);
 		}
-	});
+	} 
 }
 
 // SOURCE ::: https://stackoverflow.com/questions/12997123/print-specific-part-of-webpage/#answer-12997207
@@ -584,9 +597,9 @@ function listFile(root, fileName, parentElement) {
 	fileTree.initNode(fullPath, elem);
 }
 
-// FUNCTION ::: Create directory menu button
-function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 
+// TODO :: Merge this into listDirectory
+function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 	var divElem = document.createElement('div');
 	var dirElem = document.createElement('button');
 	divElem.classList.add("border-gray-700", "border-t", "border-b", "flex", "flex-col");
@@ -600,12 +613,36 @@ function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 
 	fileTree.initNode(fullPath, divElem);
 
+	console.log("Listing directory of : " + fullPath);
+
+	watcher.push(
+		watch(fullPath, (evt, name) => {
+			watchFileChange(fullPath, evt, name);
+		})
+	); 
+
 	fs.readdir(fullPath, (err, files) => {
 		if(err) {
 			console.log("Failed to read recursive files in directory");
 		} else {
+			console.log("Listing files in directory");
 			listMenuButtons(fullPath, files, divElem);
-			if (foldDirectory) {
+
+			if (prevFileTree !== null) {
+				let targetNode = prevFileTree.getNode(fullPath);
+				console.log(JSON.parse(JSON.stringify(fileTree)));
+				console.log(targetNode);
+				// If targetNode is undefined then no such directory exists now.
+				if (foldDirectory || (targetNode !== null && targetNode.isFolded) ) {
+					// Set isFolded to false becuase dirElem.click() calls toggleChildren
+					// And toggleChildren toggle isFolded;
+					targetNode.isFolded = false;
+					dirElem.click();
+				}
+			} 
+			// If it is a firs time reaeding rootDirectory, 
+			// then fold all of directory buttons.
+			else { // prevFileTree == null
 				dirElem.click();
 			}
 		}
@@ -848,6 +885,8 @@ function closeTab(path) {
 // FUNCTION ::: Toggle children elements of directory menu button
 function toggleChildren(event) {
 	let children = event.currentTarget.parentElement.querySelectorAll(".fileButton");
+	// Toggle is Folded
+	fileTree.getNode(event.currentTarget.dataset.path).isFolded = !fileTree.getNode(event.currentTarget.dataset.path).isFolded;
 	children.forEach((child) => {
 		// If not folded then fold
 		if (child.style.display === "none") {

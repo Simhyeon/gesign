@@ -11,6 +11,7 @@ class FileNode {
 		this.name = path.basename(baseName);
 		this.children = new Array();
 		this.fileType = fileType;
+		this.isFolded = false;
 	}
 }
 
@@ -27,7 +28,6 @@ module.exports = {
 			// Follow path list and create if not found.
 			// Cache basename for loop end.
 			//let parsed = path.parse(filePath);
-			console.log(filePath);
 			let parsed = filePath.split(path.sep);
 
 			for(let i= 0; i < this.rootDirectory.length; i++) {
@@ -64,13 +64,7 @@ module.exports = {
 			let parentNode = null;
 			let currentNode = this.rootNode;
 
-			console.log("REMOVAL-----------");
-			console.log("Parsed list is |");
-			console.log(parsed);
-			console.log("Starting as :" + parsed[this.rootDirectory.length]);
-
 			for(let i = this.rootDirectory.length; i < parsed.length; i++) {
-				console.log(JSON.parse(JSON.stringify(currentNode.children)))
 				let nextNode = this.checkNode(currentNode, parsed[i]);
 				if (nextNode === null) {
 					console.error("Undfined behaviour detected returning from removing node.");
@@ -79,9 +73,6 @@ module.exports = {
 				parentNode = currentNode;
 				currentNode = nextNode;
 			}
-
-			console.log("Current parentNode is : " + parentNode);
-			console.log("Current node is : " + currentNode);
 
 			// Final currentNode is baseName of the given filePath
 			// TODO ::: Not sure this is optimal to do this.
@@ -96,7 +87,7 @@ module.exports = {
 			for(let i= 0; i < this.rootDirectory.length; i++) {
 				if (this.rootDirectory[i] !== parsed[i]) {
 					console.error("Can't add node with different rootDirectory");
-					return undefined;
+					return null;
 				}
 			}
 
@@ -104,11 +95,11 @@ module.exports = {
 			for(let i = this.rootDirectory.length; i < parsed.length; i++) {
 				let nextNode = this.checkNode(currentNode, parsed[i]);
 				if (nextNode === null) {
-					return false;
+					return null;
 				}
 				currentNode = nextNode;
 			}
-			return true;
+			return currentNode;
 		}
 
 		// Called on node-watch file change or remove
@@ -123,15 +114,10 @@ module.exports = {
 			let fileType = FILE;
 			if (path.extname(baseName) === '') fileType = DIRECTORY;
 
-			console.log("Creating node with : " + baseName);
+			// console.log("Creating node with : " + baseName);
 			let newNode = new FileNode(baseName ,fileType, element);
 			nodeParent.children.push(newNode);
 			return newNode;
-		}
-
-		// For general context.
-		listAllNodes() {
-
 		}
 	}
 }
