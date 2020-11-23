@@ -87,7 +87,7 @@ module.exports = {
 			for(let i= 0; i < this.rootDirectory.length; i++) {
 				if (this.rootDirectory[i] !== parsed[i]) {
 					console.error("Can't add node with different rootDirectory");
-					return null;
+					return undefined;
 				}
 			}
 
@@ -95,6 +95,7 @@ module.exports = {
 			for(let i = this.rootDirectory.length; i < parsed.length; i++) {
 				let nextNode = this.checkNode(currentNode, parsed[i]);
 				if (nextNode === null) {
+					console.log("Returning null");
 					return null;
 				}
 				currentNode = nextNode;

@@ -50,6 +50,8 @@ const HIGHLIGHT = "bg-white";
 const NORMALBG = "bg-gray-300";
 const OUTDATEDCOLOR = "bg-red-500";
 const UPTODATECOLOR = "bg-blue-500";
+// BREAKABLE ::: This is really hard code and may breakble in later releases of toast ui editor.
+const FONTCLASSES= ".CodeMirror-lines, .tui-editor-contents";
 
 // VARAIBLE ::: Caching of specific dom elements.
 const tabMenu = document.querySelector("#openedTabs");
@@ -474,16 +476,21 @@ function watchFileChange(directory, evt, name) {
 		if (extName === ".gdml" || extName === "") {
 			// If setting directory is not the first time
 			if (prevFileTree !== null) {
-				// Result is either true, false or null.
+				// Result is either null or node.
 				// Null means given name(path) doesn't match given root directory.
+				console.log("Currently trying to check if file is in FileTree");
+				console.log("Changed file name is :");
+				console.log(JSON.parse(JSON.stringify(name)));
+				console.log("Previous FileTree content");
+				console.log(JSON.parse(JSON.stringify(prevFileTree)));
 				let result = prevFileTree.getNode(name);
-				if (result === null) {
+				if (result === undefined) {
 					alert("Failed to resolve file hierarchy. Please reload directory.");
 					return;
 				}
 
 				// if node already exists dont read root directory
-				if (result) {
+				if (result !== null) {
 					// TODO ::: Check if content has changed.
 					return;
 				} 
@@ -885,6 +892,7 @@ function closeTab(path) {
 // FUNCTION ::: Toggle children elements of directory menu button
 function toggleChildren(event) {
 	let children = event.currentTarget.parentElement.querySelectorAll(".fileButton");
+	//let dirChidlren = event.currentTarget.parentElement.querySelectorAll(".dirButton:not(.first)");
 	// Toggle is Folded
 	fileTree.getNode(event.currentTarget.dataset.path).isFolded = !fileTree.getNode(event.currentTarget.dataset.path).isFolded;
 	children.forEach((child) => {
@@ -899,6 +907,16 @@ function toggleChildren(event) {
 			child.style.display = "none";
 		}
 	});
+	//dirChidlren.forEach(child => {
+		//// If not folded then fold
+		//if (child.style.display === "none") {
+			//child.style.display = "block";
+		//} 
+		//// if folded then unfold
+		//else {
+			//child.style.display = "none";
+		//}
+	//})
 }
 
 // FUNCTION ::: Initiate ToastEditorInstance with given new Id.
@@ -1054,10 +1072,10 @@ function toggleMode() {
 // This function is especially limited to Toast Ui Editor and webkit engine (Namely chrome) 
 function setFontSize() {
 	if (config.content["fontSize"] === "small") {
-		document.querySelector('style').innerHTML = ".te-md-container, .te-ww-container{zoom : 100%}";
+		document.querySelector('style').innerHTML =  FONTCLASSES + "{font-size: 1.3rem}";
 	} else if (config.content["fontSize"] === "middle") {
-		document.querySelector('style').innerHTML = ".te-md-container, .te-ww-container{zoom : 130%}";
+		document.querySelector('style').innerHTML = FONTCLASSES + "{font-size: 1.5rem}";
 	} else if (config.content["fontSize"] === "large") {
-		document.querySelector('style').innerHTML = ".te-md-container, .te-ww-container{zoom : 150%}";
+		document.querySelector('style').innerHTML = FONTCLASSES + "{font-size: 1.8rem}";
 	}
 }

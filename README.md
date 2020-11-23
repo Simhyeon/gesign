@@ -10,15 +10,18 @@ Gdml format is just a yaml file with predefined tags. Gdml format consists of me
 
 ## Gdml specification
 - **status** : either OUTDATED or UPTODATE
+- **timestamp** : File timestamp written in epoch time
 - **reference** : array(list) of directories
 - **body** : document written in format of markdown(gfm).
 
 #### e.g
 ```yaml
 status: UPTODATE
+timestamp: 1605453412608 
 reference: 
-- path/to/target/file.gdml
-- file/that/should/be/ref/checked.gdml
+- /path/to/target/file.gdml
+- /file/that/should/be/ref/checked.gdml
+- /path/should/be/absolute/and/valid/gdml/file.gdml
 body: |-
   ### This is header
   <br>
@@ -44,8 +47,18 @@ Making a desktop application is not an easy task. Furthermore making it cross-pl
 
 ## TODO 
 
-- [X] Command line options e.g init, new file
+- [ ] Fix bugs
+	- [ ] Directory is not properly displayed as nested
+- [ ] Command line options e.g init, new file
+	- [x] Validation
+	- [x] Headless Reference Check
+	- [x] Init config file
+	- [x] Create new gdml file
+	- [ ] Show list of gdml files in root directory
+- [ ] Config file 
+	- [x] Exclusion rules
+	- [x] Font size
+	- [x] Start Mode
+	- [ ] Check dependencies on load
 - [ ] Single executable file
-- [ ] Config file for exclusion rule
-- [ ] Editable comment section.
-- [ ] Git integration
+- [ ] Improve Aesthetics
