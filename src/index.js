@@ -17,6 +17,9 @@ const {Config} = require("./config");
 const {FileTree} = require("./filetree");
 const CliOption = cli.CliOption;
 
+/// VARIABLE ::: Manual reload flag
+let shouldReload = false;
+
 /// HEADER ::: Declare class instance to use 
 let watcher = new Array();
 let prevFileTree = null;
@@ -252,9 +255,9 @@ function checkerButton() {
 			let readFile = yaml.load(fs.readFileSync(totalGdmlList[j].path), 'utf8');
 			readFile["status"] = checkerList[j].status;
 			fs.writeFileSync(totalGdmlList[j].path, yaml.safeDump(readFile), 'utf8');
+			shouldReload = true;
 		}
 	}
-	//alert("Checked dependencies successfully");
 }
 
 // EVENT ::: Save markdown of tabObject into the file which path is associated with tabObject.
@@ -490,13 +493,15 @@ function watchFileChange(directory, evt, name) {
 				}
 
 				// if node already exists dont read root directory
-				if (result !== null) {
+				if (result !== null && !shouldReload) {
 					// TODO ::: Check if content has changed.
 					return;
 				} 
 			}
 
-			console.log("Setting root directory");
+
+			// Reset variable.
+			if (shouldReload) shouldReload = false;
 			// if file or directory has changed then reload root directory.
 			setRootDirectory(rootDirectory);
 		}
@@ -679,7 +684,7 @@ function loadGdml(filePath) {
 // This function is called when sideMenu button or tab button is clicked.
 function loadGdmlToEditor(event) {
 
-	// If tab is already open then copy tab data into editorInstance.
+	// Get event's tab Index
 	let tabIndex = Number(event.currentTarget.dataset.index);
 	// If tabIndex is -1 it might be because listmenu button is clicked
 	// In which case list menu doesn't have index value
@@ -702,7 +707,9 @@ function loadGdmlToEditor(event) {
 		// Update Status Bar
 		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 
-		if (tabObjects[indexCache].temp) {
+		// If prior tab was temporary delete tab
+		// If clicking button that is opened as temporary tab don't do anything
+		if (tabObjects[indexCache].temp && indexCache !== currentTabIndex) {
 			closeTab(tabObjects[indexCache].path);
 		}
 
@@ -711,9 +718,10 @@ function loadGdmlToEditor(event) {
 
 	// At least one tab is opened and user is trying to open another tab with another file
 	// Hide currently visible tab or delte if tab is temporary.
+	let tabCache = -1;
 	if(currentTabIndex !== -1) {
 		if (tabObjects[currentTabIndex].temp) {
-			closeTab(tabObjects[currentTabIndex].path);
+			tabCache = currentTabIndex;
 		} else {
 			hideCurrentTab();
 		}
@@ -789,6 +797,12 @@ function loadGdmlToEditor(event) {
 		metaElem.addEventListener('drop', (event) => {
 			addRefBtn(event.dataTransfer.getData("text"), false);
 		});
+
+		// If tabcache has been saved
+		if (tabCache !== -1) {
+			closeTab(tabObjects[tabCache].path);
+			console.log(JSON.parse(JSON.stringify(tabObjects.length)));
+		}
 	});
 }
 
