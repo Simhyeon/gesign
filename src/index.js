@@ -584,6 +584,11 @@ function listFile(root, fileName, parentElement) {
 	if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
 	else menuColor = UPTODATECOLOR;
 
+	// If filename is too long then cut it
+	fileName = path.basename(fileName, '.gdml')
+	if (fileName.length > 13) {
+		fileName = fileName.slice(0, 13) + "...";
+	}
 	elem.textContent = fileName;
 	elem.dataset.path = fullPath;
 	elem.dataset.index = -1;
@@ -914,24 +919,6 @@ function toggleChildren(event) {
 		})
 		fileTree.getNode(event.currentTarget.dataset.path).isFolded =  true;
 	}
-
-	return;
-
-	let children = event.currentTarget.parentElement.querySelectorAll(".fileButton");
-	// Toggle is Folded
-	fileTree.getNode(event.currentTarget.dataset.path).isFolded = !fileTree.getNode(event.currentTarget.dataset.path).isFolded;
-	children.forEach((child) => {
-		// If not folded then fold
-		if (child.style.display === "none") {
-			event.currentTarget.textContent = "↓" +path.basename(event.currentTarget.dataset.path);
-			child.style.display = "block";
-		} 
-		// if folded then unfold
-		else {
-			event.currentTarget.textContent = "| " +path.basename(event.currentTarget.dataset.path);
-			child.style.display = "none";
-		}
-	});
 }
 
 // FUNCTION ::: Initiate ToastEditorInstance with given new Id.
