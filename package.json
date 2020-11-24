@@ -10,16 +10,20 @@
     }
   },
   "scripts": {
-    "start": "electron ./src"
+    "start": "electron ./src",
+    "tailwind": "NODE_ENV=production npx tailwindcss-cli@latest build ./src/index.css -o ./src/styles.css",
+    "devwind": "npx tailwindcss-cli@latest build ./src/index.css -o ./src/styles.css"
   },
   "keywords": [],
   "author": "Simon Creek",
   "license": "MIT",
   "devDependencies": {
+    "autoprefixer": "^10.0.2",
     "electron": "^10.1.5",
     "electron-packager": "^15.1.0",
     "eslint": "^7.12.1",
-    "tailwind": "^4.0.0"
+    "postcss": "^8.1.10",
+    "tailwindcss": "^2.0.1"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.1",
