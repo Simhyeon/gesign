@@ -351,7 +351,7 @@ function setRootDirectory(directory) {
 		var divElem = document.createElement('div');
 		var dirElem = document.createElement('div');
 		divElem.classList.add("border-gray-700", "border-b", "flex", "flex-col");
-		dirElem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "my-1");
+		dirElem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "my-1", "w-full");
 		dirElem.textContent = "<" + path.basename(directory) + ">";
 		sideMenu.appendChild(divElem);
 		divElem.appendChild(dirElem);
@@ -595,7 +595,7 @@ function listFile(root, fileName, parentElement) {
 		event.dataTransfer.setData('text/plain', event.currentTarget.dataset.path);
 	});
 
-	elem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "mb-1");
+	elem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "mb-1", "w-full");
 	elem.draggable = true;
 	parentElement.appendChild(elem);
 	// Add value to array(list) so that dependency checker can do his job.
@@ -609,8 +609,8 @@ function listFile(root, fileName, parentElement) {
 function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 	var divElem = document.createElement('div');
 	var dirElem = document.createElement('button');
-	divElem.classList.add("border-gray-700", "border-t", "border-b", "flex", "flex-col");
-	dirElem.classList.add("dirButton","font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "mb-1");
+	divElem.classList.add("directory", "border-gray-700", "border-t", "border-b", "flex", "flex-col");
+	dirElem.classList.add("dirButton","font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "mb-1", "w-full");
 	let fullPath = path.join(root, dirName);
 	dirElem.textContent = "↓" + dirName;
 	dirElem.dataset.path = fullPath;
@@ -888,11 +888,36 @@ function closeTab(path) {
 	}
 }
 
-
 // FUNCTION ::: Toggle children elements of directory menu button
 function toggleChildren(event) {
+	let siblings = new Array();
+	let current = event.currentTarget.nextElementSibling;
+
+	while (current !== null ) {
+		siblings.push(current);
+		current = current.nextElementSibling;
+	}
+
+	// Currently folded
+	if (fileTree.getNode(event.currentTarget.dataset.path).isFolded) {
+		event.currentTarget.textContent = "↓" +path.basename(event.currentTarget.dataset.path);
+		siblings.forEach(item => {
+			item.style.display = "block"; // unfold
+		});
+		fileTree.getNode(event.currentTarget.dataset.path).isFolded =  false;
+	} 
+	// CUrrently unfolded
+	else {
+		event.currentTarget.textContent = "| " +path.basename(event.currentTarget.dataset.path);
+		siblings.forEach(item => {
+			item.style.display = "none";
+		})
+		fileTree.getNode(event.currentTarget.dataset.path).isFolded =  true;
+	}
+
+	return;
+
 	let children = event.currentTarget.parentElement.querySelectorAll(".fileButton");
-	//let dirChidlren = event.currentTarget.parentElement.querySelectorAll(".dirButton:not(.first)");
 	// Toggle is Folded
 	fileTree.getNode(event.currentTarget.dataset.path).isFolded = !fileTree.getNode(event.currentTarget.dataset.path).isFolded;
 	children.forEach((child) => {
@@ -907,16 +932,6 @@ function toggleChildren(event) {
 			child.style.display = "none";
 		}
 	});
-	//dirChidlren.forEach(child => {
-		//// If not folded then fold
-		//if (child.style.display === "none") {
-			//child.style.display = "block";
-		//} 
-		//// if folded then unfold
-		//else {
-			//child.style.display = "none";
-		//}
-	//})
 }
 
 // FUNCTION ::: Initiate ToastEditorInstance with given new Id.
