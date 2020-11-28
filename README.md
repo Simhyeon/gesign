@@ -60,5 +60,6 @@ Making a desktop application is not an easy task. Furthermore making it cross-pl
 	- [x] Font size
 	- [x] Start Mode
 	- [ ] Check dependencies on load
+- [ ] Template Support
 - [ ] Single executable file
 - [ ] Improve Aesthetics

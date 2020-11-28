@@ -31258,6 +31258,16 @@ div#references::-webkit-scrollbar {
   margin-left: 1em;
 }
 
+.uptodate ~ i {
+  --tw-text-opacity: 1;
+  color: rgba(59, 130, 246, var(--tw-text-opacity));
+}
+
+.outdated ~ i {
+  --tw-text-opacity: 1;
+  color: rgba(239, 68, 68, var(--tw-text-opacity));
+}
+
 @media (min-width: 640px) {
   .sm\:container {
     width: 100%;

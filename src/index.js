@@ -46,6 +46,7 @@ const UPTODATE = "UPTODATE";
 const UNSAVED ="UNSAVED";
 const SAVED ="SAVED";
 const UNSAVEDSYMBOL = "+";
+const NEWFILENAME = "new*.gdml";
 
 // VARAIBLE ::: COLOR value is based on tailwind-css class names
 const UNDEFINEDCOLOR = "bg-gray-700";
@@ -133,7 +134,7 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	currentTabIndex = tabObjects.length;
 	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem, config.content["startMode"]);
 
-	var tabObject = newTabObject(false, SAVED, SAVED, true, path.join(rootDirectory, 'new*.gdml'), new Set(), gdml.newGdml(), metaElem, editorScreenElem, null, editorInstance);
+	var tabObject = newTabObject(false, SAVED, SAVED, true, path.join(rootDirectory, NEWFILENAME), new Set(), gdml.newGdml(), metaElem, editorScreenElem, null, editorInstance);
 	// LEGACY :::  
 	//var tabObject = {
 		//contentStatus: SAVED, 
@@ -275,7 +276,13 @@ function saveFile() {
 	if(currentTabObject.contentStatus !== UNSAVED && currentTabObject.refStatus !== UNSAVED) return; // if file is not unsaved then skip operation
 
 	// Update content body with editor's content
-	currentTabObject.content["lastModified"] = Date.now();
+	//
+	// Update lastModified(timeStamp) only content has changed.
+	// If not changing reference will cause timestamp and will be set to uptodate
+	// automatically.
+	if (currentTabObject.contentStatus == UNSAVED) {
+		currentTabObject.content["lastModified"] = Date.now();
+	}
 	currentTabObject.content["body"] = currentTabObject.editor.getMarkdown().trim();
 	currentTabObject.content["reference"] = Array.from(currentTabObject.refs);
 	// If not manualSave directrly save without further procedure
@@ -323,6 +330,53 @@ document.querySelector("#openDirBtn").addEventListener('click', () => {
 		}
 	});
 });
+
+function checkTabContents() {
+	tabObjects.forEach(item => {
+		if (item.path === NEWFILENAME) return;
+		fs.readFile(item.path, (err, data) => {
+			if (err) {
+				console.error("Failed to read file from tab" + err);
+			} else {
+				// Load file contents
+				let readContent = yaml.load(data, 'utf8');
+				// Compare contents of read file and editor's contents
+				if (readContent !== item.content) {
+					// If editor is unsaved
+					// Set to manualSave so that user can save to another file
+					if (item.contentStatus === UNSAVED || item.refStatus === UNSAVED) {
+						item.manualSave = true;
+						item.tab.textContent = path.basename(item.path) + UNSAVEDSYMBOL;
+					} 
+					// If editor content is not "unsaved"
+					// just copy file contents to editor
+					else {
+						// TODO ::: THIS might be bloat, however this app is bloat anyway.
+						// Reason why checking equality before setting, although it looks redundant
+						// is that pasting makes cursor to move to start area which is not an ideal
+						// experience for end users.
+						if (item.editor.getMarkdown().trim() !== readContent["body"].trim()) {
+							item.content = readContent;
+							item.editor.setMarkdown(readContent["body"], false);
+						}
+
+						// Get References from list
+						readContent["reference"].forEach((ref) => {
+							if (!item.refs.has(ref)) {
+								addRefBtn(ref, true);
+							}
+						});
+
+						item.refs = new Set(readContent["reference"]);
+					}
+
+					if (item.index === currentTabIndex) statusGraphics(readContent["status"]);
+				}
+
+			}
+		});
+	});
+}
 
 // FUNCTION ::: Set root directory and set other variables accordingly.
 function setRootDirectory(directory) {
@@ -397,6 +451,8 @@ function setRootDirectory(directory) {
 	// If reopening same rootDirectory then check if tabObjects are still valid
 	else {
 		tabObjects.forEach((tabObject) => {
+			// If tab's content is not saved to a file yet, ignore.
+			if (tabObject.path === NEWFILENAME ) return;
 			// File associated to tabObject now doesn't exist
 			if (!fs.existsSync(tabObject.path)) {
 				// Set status to unsaved
@@ -440,7 +496,7 @@ function setRootDirectory(directory) {
 						tabObject.refs = new Set(readContent["reference"]);
 					}
 
-					statusGraphics(readContent["status"]);
+					if (tabObject.index === currentTabIndex) statusGraphics(readContent["status"]);
 				}
 			}
 		})
@@ -494,7 +550,7 @@ function watchFileChange(directory, evt, name) {
 
 				// if node already exists dont read root directory
 				if (result !== null && !shouldReload) {
-					// TODO ::: Check if content has changed.
+					checkTabContents();
 					return;
 				} 
 			}
@@ -585,9 +641,12 @@ function listFile(root, fileName, parentElement) {
 	var elem = document.createElement('button');
 	var indElem = document.createElement('i'); // indicator for statuses
 
-	let menuColor = UNDEFINEDCOLOR; // Undefined color
-	if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
-	else menuColor = UPTODATECOLOR;
+	//let menuColor = UNDEFINEDCOLOR; // Undefined color
+	//if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
+	//else menuColor = UPTODATECOLOR;
+	
+	let buttonStatus = "uptodate"; // Undefined color
+	if (fileYaml["status"] == OUTDATED) buttonStatus = "outdated";
 
 	// If filename is too long then cut it
 	fileName = path.basename(fileName, '.gdml')
@@ -605,11 +664,18 @@ function listFile(root, fileName, parentElement) {
 		event.dataTransfer.setData('text/plain', event.currentTarget.dataset.path);
 	});
 
-	elem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "mb-1", "w-full");
+	//elem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "mb-1", "w-full");
+	divElem.classList.add("flex", "items-center");
+	elem.classList.add("font-bold", "text-left", "py-2", "pl-4", "text-white", "fileButton", "mb-1", "w-full", buttonStatus);
+	indElem.classList.add("fas", "fa-circle", "mr-1", "text-xs");
+
 	elem.draggable = true;
-	parentElement.appendChild(elem);
+	parentElement.appendChild(divElem);
 	// Add value to array(list) so that dependency checker can do his job.
 	totalGdmlList.push({ path: fullPath, status: fileYaml["status"]});
+
+	divElem.appendChild(elem);
+	divElem.appendChild(indElem);
 
 	fileTree.initNode(fullPath, elem);
 }
@@ -985,10 +1051,12 @@ function listReferences() {
 }
 
 // FUNCTION ::: Add reference button, called from listReferences function.
+// This method adds refernces lists to current tab object element.
 function addRefBtn(fileName, listing) {
 	let currentTabObject = tabObjects[currentTabIndex];
 
 	// If listing is not true then it is adding what is not read from file
+	// Mostly from drag and drop addition.
 	if (!listing) {
 		// if reference already exists then ignore.
 		if (currentTabObject.refs.has(fileName)) return;
@@ -1002,7 +1070,27 @@ function addRefBtn(fileName, listing) {
 	var elem = document.createElement('button');
 	let filePath = fileName;
 
-	let fileYaml = yaml.load(fs.readFileSync(filePath)); // this should not fail becuase it was read from readdirSync
+	// This might yield error ecause filePath is not possiblye valid yml file.
+	let fileYaml;
+	try {
+		fileYaml = yaml.load(fs.readFileSync(filePath)); 
+		// Return and don't add as reference if read file is not a valid gdml.
+		if (!checker.IsValidGdmlString(fileYaml)) {
+			currentTabObject.refs.delete(filePath);
+			currentTabObject.refStatus = UNSAVED;
+			currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
+			alert("Referencing file is not a valid gdml file. It will be deleted after save.");
+			return;
+		}
+	} catch (err) {
+		console.error("Failed to read file content as yaml. Err code : " + err);
+		currentTabObject.refs.delete(filePath);
+		currentTabObject.refStatus = UNSAVED;
+		currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
+		alert("Referencing file is not a valid gdml file or non existent. It will be deleted after save.");
+		return;
+	}
+	
 	let menuColor = UNDEFINEDCOLOR; // Undefined color
 	if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
 	else menuColor = UPTODATECOLOR;

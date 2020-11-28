@@ -71,3 +71,11 @@ div#references::-webkit-scrollbar {
 .directory > div {
 	margin-left: 1em;
 }
+
+.uptodate ~ i {
+	@apply text-blue-500;
+}
+
+.outdated ~ i {
+	@apply text-red-500;
+}
