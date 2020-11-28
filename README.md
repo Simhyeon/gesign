@@ -47,8 +47,8 @@ Making a desktop application is not an easy task. Furthermore making it cross-pl
 
 ## TODO 
 
-- [ ] Fix bugs
-	- [ ] Directory is not properly displayed as nested
+- [x] Fix bugs
+	- [x] Directory is not properly displayed as nested
 - [ ] Command line options e.g init, new file
 	- [x] Validation
 	- [x] Headless Reference Check
@@ -59,7 +59,7 @@ Making a desktop application is not an easy task. Furthermore making it cross-pl
 	- [x] Exclusion rules
 	- [x] Font size
 	- [x] Start Mode
-	- [ ] Check dependencies on load
-- [ ] Template Support
+	- [ ] Check dependencies on save
+- [x] Template Support
 - [ ] Single executable file
 - [ ] Improve Aesthetics
