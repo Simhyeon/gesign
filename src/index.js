@@ -634,7 +634,7 @@ function listFile(root, fileName, parentElement) {
 	
 	// check File validation
 	// If not valid gdml file then return.
-	if (!checker.IsValidGdmlString(fileYaml)) {
+	if (!gdml.IsValidGdmlString(fileYaml)) {
 		return;
 	}
 
@@ -1197,7 +1197,7 @@ function addRefBtn(fileName, listing) {
 	try {
 		fileYaml = yaml.load(fs.readFileSync(filePath)); 
 		// Return and don't add as reference if read file is not a valid gdml.
-		if (!checker.IsValidGdmlString(fileYaml)) {
+		if (!gdml.IsValidGdmlString(fileYaml)) {
 			currentTabObject.refs.delete(filePath);
 			currentTabObject.refStatus = UNSAVED;
 			currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;

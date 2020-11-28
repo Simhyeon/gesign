@@ -9,8 +9,6 @@ const UPTODATE = "UPTODATE";
 const NOTCHECKED = "NOTCHECKED";
 const _ = require('lodash');
 
-let gdmlTags = new Array("status", "reference", "body");
-
 // CLASS ::: Used by Checker class instance
 // Saves values needed for dependencies checking.
 class NodeObject {
@@ -237,45 +235,4 @@ module.exports = {
 			return values;
 		}
 	},
-	// FUNCTION ::: Check references in headless state. (wihtout gui)
-	HeadLessChecker : class HeadLessChecker {
-
-	},
-
-	// TODO :: Check if this function is needed.
-	// FUNCTION :::  Check if given file is valid gdml Used by index.js 
-	IsValidGdml : function(fullPath)  {
-		let result = null;
-		if (path.extname(fullPath) !== ".gdml") return false;
-		try {
-			result = yaml.load(fs.readFileSync(fullPath));
-		} catch {
-			return false;
-		}
-		let isValid = true;
-
-		if (result === null || result === undefined) {
-			return false;
-		}
-
-		gdmlTags.forEach((tag) => {
-			if (result[tag] === null || result[tag] === undefined ) {
-				isValid = false;
-			}
-		});
-		return isValid;
-	},
-	IsValidGdmlString: function(content) {
-		let isValid = true;
-		if (content === null || content === undefined) {
-			return false;
-		}
-
-		gdmlTags.forEach((tag) => {
-			if (content[tag] === null || content[tag] === undefined ) {
-				isValid = false;
-			}
-		});
-		return isValid;
-	}
 }

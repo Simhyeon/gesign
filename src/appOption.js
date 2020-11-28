@@ -3,7 +3,6 @@ const path = require("path");
 const yaml = require('js-yaml');
 const cli = require('./cli');
 const {Config} = require('./config');
-const checker = require("./checker");
 const gdml = require("./gdml");
 const {Checker} = require("./checker");
 
@@ -89,7 +88,7 @@ Options:
 					return new ProcessStatus(true, 0);
 				}
 
-				if (checker.IsValidGdml(fullPath)) {
+				if (gdml.IsValidGdml(fullPath)) {
 					console.log("File : " + fileName + " is a valid gdml file.");
 				} else {
 					console.log("File : " + fileName + " is not a valid gdml file.");
