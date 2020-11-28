@@ -16,13 +16,13 @@
 	<body>
 		<div id="helpText" style="top: 50%; left: 40%; font-size: 20px; position: fixed; z-index: 10; color: gray">Open directory to start editing gdml files</div>
 		<div id="screen" class="flex w-full h-full">
-			<div id="sideNav" class="sidenav flex flex-col bg-gray-700 border-r">
+			<div id="sideNav" class="sidenav flex flex-col bg-gray-600 border-r">
 				<div id="appMenu" class="appmenu flex flex-col w-full">
 					<div id="testFiles" class="flex border-b">
-						<button id="saveFileBtn" class="py-1 px-2 mx-2 tooltip"><span class="tooltiptext">Save File</span><i class="far fa-save"></i></button>
-						<button id="openDirBtn" class="py-1 px-2 mx-2 tooltip"><span class="tooltiptext">Open root directory</span><i class="far fa-folder-open"></i></button>
-						<button id="checker" class="py-1 px-2 mx-2 tooltip"><span class="tooltiptext">Check depdencies</span><i class="far fa-check-square"></i></button>
-						<button id="printBtn" class="py-1 px-2 mx-2 tooltip"><span class="tooltiptext">Print File</span><i class="fas fa-print"></i></button>
+						<button id="saveFileBtn" class="py-1 px-2 mx-2 tooltip hover:opacity-50"><span class="tooltiptext">Save File</span><i class="far fa-save text-gray-300"></i></button>
+						<button id="openDirBtn" class="py-1 px-2 mx-2 tooltip hover:opacity-50"><span class="tooltiptext">Open root directory</span><i class="far fa-folder-open text-gray-300"></i></button>
+						<button id="checker" class="py-1 px-2 mx-2 tooltip hover:opacity-50"><span class="tooltiptext">Check depdencies</span><i class="far fa-check-square text-gray-300"></i></button>
+						<button id="printBtn" class="py-1 px-2 mx-2 tooltip hover:opacity-50"><span class="tooltiptext">Print File</span><i class="fas fa-print text-gray-300"></i></button>
 					</div>
 				</div>
 				<div id="menuContents" class="flex flex-col overflow-y-auto overflow-x-hidden">
@@ -30,7 +30,7 @@
 				</div>
 			</div>
 			<div id="main" class="flex flex-col h-full w-full" >
-				<div id="tabs" class="pl-2 bg-gray-700 h-36 flex border-b" style="height: 3%; min-height: 33px">
+				<div id="tabs" class="pl-2 bg-gray-600 h-36 flex border-b" style="height: 3%; min-height: 33px">
 					<div id="openedTabs" class="flex">
 					</div>
 					<button id="addNewDocument" class="text-gray-800 font-semibold py-1 px-2">
@@ -48,7 +48,6 @@
 				</div>
 			</div>
 		</div>
-
 		<script charset="utf-8" src="index.js"></script>
 	</body>
 </html>

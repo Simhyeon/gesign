@@ -49,7 +49,7 @@ const UNSAVEDSYMBOL = "+";
 const NEWFILENAME = "new*.gdml";
 
 // VARAIBLE ::: COLOR value is based on tailwind-css class names
-const UNDEFINEDCOLOR = "bg-gray-700";
+const UNDEFINEDCOLOR = "bg-gray-600";
 const HIGHLIGHT = "bg-white"; 
 const NORMALBG = "bg-gray-300";
 const OUTDATEDCOLOR = "bg-red-500";
@@ -407,8 +407,8 @@ function setRootDirectory(directory) {
 		// Make root directory buttonish div
 		var divElem = document.createElement('div');
 		var dirElem = document.createElement('div');
-		divElem.classList.add("border-gray-700", "border-b", "flex", "flex-col");
-		dirElem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "my-1", "w-full");
+		divElem.classList.add("flex", "flex-col");
+		dirElem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "my-1", "w-full", 'select-none');
 		dirElem.textContent = "<" + path.basename(directory) + ">";
 		sideMenu.appendChild(divElem);
 		divElem.appendChild(dirElem);
@@ -666,7 +666,7 @@ function listFile(root, fileName, parentElement) {
 
 	//elem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "mb-1", "w-full");
 	divElem.classList.add("flex", "items-center");
-	elem.classList.add("font-bold", "text-left", "py-2", "pl-4", "text-white", "fileButton", "mb-1", "w-full", buttonStatus);
+	elem.classList.add("font-bold", "text-left", "py-2", "pl-4", "text-gray-200", "fileButton", "mb-1", "w-full", "inline", "hover:opacity-50", buttonStatus);
 	indElem.classList.add("fas", "fa-circle", "mr-1", "text-xs");
 
 	elem.draggable = true;
@@ -685,10 +685,10 @@ function listFile(root, fileName, parentElement) {
 function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 	var divElem = document.createElement('div');
 	var dirElem = document.createElement('button');
-	divElem.classList.add("directory", "border-gray-700", "border-t", "border-b", "flex", "flex-col");
-	dirElem.classList.add("dirButton","font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "mb-1", "w-full");
+	divElem.classList.add("directory", "flex", "flex-col");
+	dirElem.classList.add("dirButton","font-bold", "text-left", "py-2", "px-4", "text-gray-200", UNDEFINEDCOLOR, "mb-1", "w-full", "hover:opacity-50");
 	let fullPath = path.join(root, dirName);
-	dirElem.textContent = "↓" + dirName;
+	dirElem.textContent = "⌄" + dirName;
 	dirElem.dataset.path = fullPath;
 	dirElem.addEventListener('click', toggleChildren);
 	parentElement.appendChild(divElem);
@@ -985,17 +985,17 @@ function toggleChildren(event) {
 
 	// Currently folded
 	if (fileTree.getNode(event.currentTarget.dataset.path).isFolded) {
-		event.currentTarget.textContent = "↓" +path.basename(event.currentTarget.dataset.path);
+		event.currentTarget.textContent = '⌄ ' + path.basename(event.currentTarget.dataset.path);
 		siblings.forEach(item => {
-			item.style.display = "block"; // unfold
+			item.classList.remove("hidden");
 		});
 		fileTree.getNode(event.currentTarget.dataset.path).isFolded =  false;
 	} 
 	// CUrrently unfolded
 	else {
-		event.currentTarget.textContent = "| " +path.basename(event.currentTarget.dataset.path);
+		event.currentTarget.textContent = "> " +path.basename(event.currentTarget.dataset.path);
 		siblings.forEach(item => {
-			item.style.display = "none";
+			item.classList.add("hidden");
 		})
 		fileTree.getNode(event.currentTarget.dataset.path).isFolded =  true;
 	}
