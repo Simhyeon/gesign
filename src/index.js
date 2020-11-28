@@ -15,6 +15,7 @@ const cli = require("./cli");
 const gdml = require('./gdml');
 const {Config} = require("./config");
 const {FileTree} = require("./filetree");
+const template = require('./template')
 const CliOption = cli.CliOption;
 
 /// VARIABLE ::: Manual reload flag
@@ -1010,11 +1011,108 @@ function initEditor(newId, element, mode="wysiwyg") {
 		previewStyle: 'tab',
 		height: '100%',
 		initialEditType: mode,
-		language: 'ko'
+		language: 'ko',
+		toolbarItems: [
+			'heading',
+			'bold',
+			'italic',
+			'strike',
+			'divider',
+			'hr',
+			'quote',
+			'divider',
+			'ul',
+			'ol',
+			'task',
+			'indent',
+			'outdent',
+			'divider',
+			'table',
+			'image',
+			'link',
+			'divider',
+			'code',
+			'codeblock',
+			'divider',
+			{
+				type: 'button',
+				options: {
+					el: elementWithInnerHtml('<i class="fas fa-file-export text-gray-600" style="font-size: 0.65rem;"></i>'),
+					event: 'exportTemplate',
+					tooltip: 'Export template',
+					style: 'background:none;'
+				}
+			},
+			{
+				type: 'button',
+				options: {
+					el: elementWithInnerHtml('<i class="fas fa-file-import text-gray-600" style="font-size: 0.65rem;"></i>'),
+					event: 'importTemplate',
+					tooltip: 'Import template',
+					style: 'background:none;'
+				}
+			}
+		]
 	});
 	editor.getHtml();
+	
+	editor.eventManager.addEventType('exportTemplate');
+	editor.eventManager.listen('exportTemplate', exportTemplate);
+	editor.eventManager.addEventType('importTemplate');
+	editor.eventManager.listen('importTemplate', importTemplate);
 
 	return editor;
+}
+
+function elementWithInnerHtml(innerHtmlText) {
+	const button = document.createElement('button');
+	button.innerHTML = innerHtmlText;
+	button.classList.add("flex", "items-center", "content-center");
+
+	return button;
+}
+
+function importTemplate() {
+	if (currentTabIndex === -1) return;
+	let currentTabObject = tabObjects[currentTabIndex];
+
+	// TODO ::: Make this configurable
+	// so that people can choose behaviour.
+	if (currentTabObject.content.body.length !== 0) {
+		alert("Loading template is only possible when current document is empty.");
+		return;
+	}
+
+	if (!fs.existsSync(path.join(rootDirectory, config.content["templatePath"]))){
+		fs.mkdirSync(path.join(rootDirectory, config.content["templatePath"]));
+	}
+
+	remote.dialog.showOpenDialog(remote.getCurrentWindow(), {defaultPath: path.join(rootDirectory, config.content["templatePath"])}).then((response) => {
+		if(!response.canceled) {
+			// Reset gdml List
+			let readContent = fs.readFileSync(response.filePaths[0], 'utf-8');
+			currentTabObject.editor.setMarkdown(readContent.toString());
+			currentTabObject.contentStatus = UNSAVED;
+			currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
+
+		}
+	});
+
+}
+
+function exportTemplate() {
+	if (currentTabIndex === -1) return;
+	let currentTabObject = tabObjects[currentTabIndex];
+
+	if (!fs.existsSync(path.join(rootDirectory, config.content["templatePath"]))){
+		fs.mkdirSync(path.join(rootDirectory, config.content["templatePath"]));
+	}
+
+	remote.dialog.showSaveDialog(remote.getCurrentWindow(), {defaultPath: path.join(rootDirectory, config.content["templatePath"])}).then((response) => {
+		if(!response.canceled) {
+			template.ExportTemplate(currentTabObject.content.body, response.filePath);
+		}
+	});
 }
 
 // FUNCTION ::: Apply Status graphical effect

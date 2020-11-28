@@ -33,6 +33,7 @@ module.exports = {
 				exclusion: new Array(),
 				startMode: "wysiwyg",
 				fontSize: "small",
+				templatePath: "templates",
 				checkOnSave : false
 			}
 		}

@@ -4,15 +4,23 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = {
-	GetTemplateContent(path) {
-		// TODO :: Check if given path exists
-		// Read file content and return as string
+	GetTemplateContent(file) {
+		if (path.extname(file) !== ".md") return;
+
+		try {
+			let content = fs.readFileSync(file);
+			return content;
+		} catch {
+			console.error("Failed to read template");
+			return;
+		}
 	},
 
-	ExportTemplate(content, path) {
-		// TODO :: Make content string into 
-		// given filename 
-		// If file name is given fully then save to iven extension.
-		// if file name is given without extension add .md
+	ExportTemplate(content, file) {
+		if (path.extname(file) !== ".md") {
+			file += ".md";
+		}
+
+		fs.writeFileSync(file, content);
 	}
 }
