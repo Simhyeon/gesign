@@ -1083,11 +1083,23 @@ function importTemplate() {
 		return;
 	}
 
-	if (!fs.existsSync(path.join(rootDirectory, config.content["templatePath"]))){
-		fs.mkdirSync(path.join(rootDirectory, config.content["templatePath"]));
+	let targetPath;
+	let isAbsolute = false;
+	if (path.isAbsolute(config.content["templatePath"])) {
+		targetPath = config.content["templatePath"];
+		isAbsolute = true;
+	} else {
+		targetPath = path.join(rootDirectory, config.content["templatePath"]);
+	}
+	if (!fs.existsSync(targetPath)){
+		if (isAbsolute) {
+			alert("Template path doesn't exist.\nAbsolute path of template is not automatically generated.");
+			return;
+		}
+		fs.mkdirSync(targetPath);
 	}
 
-	remote.dialog.showOpenDialog(remote.getCurrentWindow(), {defaultPath: path.join(rootDirectory, config.content["templatePath"])}).then((response) => {
+	remote.dialog.showOpenDialog(remote.getCurrentWindow(), {defaultPath: targetPath}).then((response) => {
 		if(!response.canceled) {
 			// Reset gdml List
 			let readContent = fs.readFileSync(response.filePaths[0], 'utf-8');
@@ -1104,11 +1116,23 @@ function exportTemplate() {
 	if (currentTabIndex === -1) return;
 	let currentTabObject = tabObjects[currentTabIndex];
 
-	if (!fs.existsSync(path.join(rootDirectory, config.content["templatePath"]))){
-		fs.mkdirSync(path.join(rootDirectory, config.content["templatePath"]));
+	let targetPath;
+	let isAbsolute = false;
+	if (path.isAbsolute(config.content["templatePath"])) {
+		targetPath = config.content["templatePath"];
+		isAbsolute = true;
+	} else {
+		targetPath = path.join(rootDirectory, config.content["templatePath"]);
+	}
+	if (!fs.existsSync(targetPath)){
+		if (isAbsolute) {
+			alert("Template path doesn't exist.\nAbsolute path of template is not automatically generated.");
+			return;
+		}
+		fs.mkdirSync(targetPath);
 	}
 
-	remote.dialog.showSaveDialog(remote.getCurrentWindow(), {defaultPath: path.join(rootDirectory, config.content["templatePath"])}).then((response) => {
+	remote.dialog.showSaveDialog(remote.getCurrentWindow(), {defaultPath: targetPath}).then((response) => {
 		if(!response.canceled) {
 			template.ExportTemplate(currentTabObject.content.body, response.filePath);
 		}
@@ -1177,7 +1201,7 @@ function addRefBtn(fileName, listing) {
 			currentTabObject.refs.delete(filePath);
 			currentTabObject.refStatus = UNSAVED;
 			currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
-			alert("Referencing file is not a valid gdml file. It will be deleted after save.");
+			alert("Referencing file is not a valid gdml file.\nIt will be deleted after save.");
 			return;
 		}
 	} catch (err) {
@@ -1185,7 +1209,7 @@ function addRefBtn(fileName, listing) {
 		currentTabObject.refs.delete(filePath);
 		currentTabObject.refStatus = UNSAVED;
 		currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
-		alert("Referencing file is not a valid gdml file or non existent. It will be deleted after save.");
+		alert("Referencing file is not a valid gdml file or non existent.\nIt will be deleted after save.");
 		return;
 	}
 	
