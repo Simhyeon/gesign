@@ -7,7 +7,7 @@ module.exports = {
 	GetTemplateContent(path) {
 		// TODO :: Check if given path exists
 		// Read file content and return as string
-	}
+	},
 
 	ExportTemplate(content, path) {
 		// TODO :: Make content string into 
