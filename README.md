@@ -10,14 +10,14 @@ Gdml format is just a yaml file with predefined tags. Gdml format consists of me
 
 ## Gdml specification
 - **status** : either OUTDATED or UPTODATE
-- **timestamp** : File timestamp written in epoch time
+- **lastModified** : File timestamp written in epoch time
 - **reference** : array(list) of directories
 - **body** : document written in format of markdown(gfm).
 
 #### e.g
 ```yaml
 status: UPTODATE
-timestamp: 1605453412608 
+lastModified: 1605453412608 
 reference: 
 - /path/to/target/file.gdml
 - /file/that/should/be/ref/checked.gdml
@@ -60,6 +60,7 @@ Making a desktop application is not an easy task. Furthermore making it cross-pl
 	- [x] Font size
 	- [x] Start Mode
 	- [ ] Check dependencies on save
+- [x] Editable config window
 - [x] Template Support
 - [ ] Single executable file
 - [ ] Improve Aesthetics
