@@ -822,7 +822,7 @@ function loadGdmlToEditor(event) {
 		metaElem.style.display = "";
 		editorScreenElem.style.display = "";
 
-		editorScreenElem.addEventListener('drop', dropHandler);
+		editorScreenElem.addEventListener('drop', dropToPasteFile);
 
 		// Make currentTabIndex to be same as length minus 1 which is 
 		// last index of newly edited array.
@@ -1370,25 +1370,35 @@ function setFontSize() {
 }`;
 }
 
-function dropHandler(ev) {
+function dropToPasteFile(ev) {
 	console.log('File(s) dropped');
 
 	// Prevent default behavior (Prevent file from being opened)
 	ev.preventDefault();
 
 	if (ev.dataTransfer.items) {
-		// Use DataTransferItemList interface to access the file(s)
-		for (let i = 0; i < ev.dataTransfer.items.length; i++) {
-			// If dropped items aren't files, reject them
-			if (ev.dataTransfer.items[i].kind === 'file') {
-				let file = ev.dataTransfer.items[i].getAsFile();
-				console.log('... file[' + i + '].name = ' + file.name);
+		// If dropped items aren't files, reject them
+		if (ev.dataTransfer.items[0].kind === 'file') {
+			let file = ev.dataTransfer.items[0].getAsFile();
+			if (path.extname(file.name).toLowerCase() === ".gdml") {
+				file.text().then(item => {
+					let currentTabObject = tabObjects[currentTabIndex];
+					let content = yaml.safeLoad(item);
+					currentTabObject.editor.setMarkdown(content.body);
+					currentTabObject.contentStatus = UNSAVED;
+					currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
+
+				});
+			} else if (path.extname(file.name).toLowerCase() === ".md") {
+				file.text().then(item => {
+					let currentTabObject = tabObjects[currentTabIndex];
+					currentTabObject.editor.setMarkdown(item);
+					currentTabObject.contentStatus = UNSAVED;
+					currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
+				});
+			} else {
+				return;
 			}
 		}
-	} else {
-		// Use DataTransfer interface to access the file(s)
-		for (let i = 0; i < ev.dataTransfer.files.length; i++) {
-			console.log('... file[' + i + '].name = ' + ev.dataTransfer.files[i].name);
-		}
-	}
+	} 
 }
