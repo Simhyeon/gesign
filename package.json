@@ -12,7 +12,8 @@
   "scripts": {
     "start": "electron ./src",
     "tailwind": "NODE_ENV=production npx tailwindcss-cli@latest build ./src/index.css -o ./src/styles.css",
-    "devwind": "npx tailwindcss-cli@latest build ./src/index.css -o ./src/styles.css"
+    "devwind": "npx tailwindcss-cli@latest build ./src/index.css -o ./src/styles.css",
+	"pack" : "npx electron-packager . gesign --platform=linux --arch=x64 --out=./build --overwrite"
   },
   "keywords": [],
   "author": "Simon Creek",

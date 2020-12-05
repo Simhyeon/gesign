@@ -17,6 +17,7 @@ const {Config} = require("./config");
 const {FileTree} = require("./filetree");
 const template = require('./template')
 const CliOption = cli.CliOption;
+const {ConfigWindow} = require('./configwindow');
 
 /// VARIABLE ::: Manual reload flag
 let shouldReload = false;
@@ -51,8 +52,8 @@ const NEWFILENAME = "new*.gdml";
 
 // VARAIBLE ::: COLOR value is based on tailwind-css class names
 const UNDEFINEDCOLOR = "bg-gray-600";
-const HIGHLIGHT = "bg-white"; 
-const NORMALBG = "bg-gray-300";
+const HIGHLIGHT = "border-b-2"; 
+const NORMALBG = "opacity-50";
 const OUTDATEDCOLOR = "bg-red-500";
 const UPTODATECOLOR = "bg-blue-500";
 // BREAKABLE ::: This is really hard code and may breakble in later releases of toast ui editor.
@@ -216,7 +217,7 @@ function checkerButton() {
 			return;
 		}
 		try {
-			checker.addNode(totalGdmlList[i].path, gdml);
+			checker.addNode(totalGdmlList[i].path, gdml, rootDirectory);
 		} catch (e) {
 			alert("Mutual reference detected from file.\n" + e);
 			return;
@@ -585,6 +586,10 @@ document.querySelector("#printBtn").addEventListener('click', () => {
     }, 1000);
 });
 
+document.querySelector("#configWindow").addEventListener('click', () => {
+	let configWindow = new ConfigWindow();
+})
+
 // TODO ::: Make children hierarchy better not just nested.
 // Add separator, Indentation might be good but it will make 
 // spacing look ugly considier vertical spacing for 
@@ -689,7 +694,7 @@ function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 	divElem.classList.add("directory", "flex", "flex-col");
 	dirElem.classList.add("dirButton","font-bold", "text-left", "py-2", "px-4", "text-gray-200", UNDEFINEDCOLOR, "mb-1", "w-full", "hover:opacity-50");
 	let fullPath = path.join(root, dirName);
-	dirElem.textContent = "⌄" + dirName;
+	dirElem.textContent = "> " + dirName;
 	dirElem.dataset.path = fullPath;
 	dirElem.addEventListener('click', toggleChildren);
 	parentElement.appendChild(divElem);
@@ -758,8 +763,9 @@ function loadGdmlToEditor(event) {
 	if (tabIndex === -1) 
 		tabIndex = isTabPresent(event.currentTarget.dataset.path);
 
+	console.log(tabIndex);
 	// If file is already open thus tab exists
-	if(tabIndex !== -1){
+	if(tabIndex !== -1 && !isNaN(tabIndex)){
 		// Hide CurrentTab
 		hideCurrentTab();
 
@@ -873,6 +879,13 @@ function loadGdmlToEditor(event) {
 	});
 }
 
+function pinTab(event) {
+	// Get event's tab Index
+	let tabIndex = Number(event.currentTarget.dataset.index);
+
+	tabObjects[tabIndex].temp = false;
+}
+
 // FUNCTION ::: Check if tab is present in tabArray, namely tabObjects (plural)
 function isTabPresent(filePath) {
 	for (var i = 0, len = tabObjects.length; i < len; i++) {
@@ -888,17 +901,19 @@ function addNewTab(filePath) {
 	let divElem = document.createElement('div');
 	let btnElem = document.createElement('button');
 
-	divElem.classList.add("blankButton", "bg-white");
+	//divElem.classList.add("blankButton", "bg-white");
+	divElem.classList.add( "text-gray-200", "font-bold", "py-1", "px-2", UNDEFINEDCOLOR, "hover:opacity-50");
 
 	btnElem.dataset.path = filePath;
 	btnElem.dataset.index = tabObjects.length - 1;
 	btnElem.textContent = path.basename(filePath);
 	btnElem.addEventListener('click', loadGdmlToEditor);
+	btnElem.addEventListener('dblclick', pinTab);
 
 	// TODO :: Make close button
 	let closeButton = document.createElement('button');
 	let iconElement = document.createElement('i');
-	iconElement.classList.add("fas", "fa-times", "pl-1");
+	iconElement.classList.add("fas", "fa-times", "pl-1", "hover:opacity-50");
 	closeButton.addEventListener('click', (event) => {
 		// Get parent target and close
 		// Also stop propagation so that clicking parent button should not be triggered.
@@ -983,6 +998,10 @@ function toggleChildren(event) {
 		siblings.push(current);
 		current = current.nextElementSibling;
 	}
+
+	// If directory does not have any siblings
+	// which means there are no itemes to be toggled.
+	if (siblings.length == 0) return;
 
 	// Currently folded
 	if (fileTree.getNode(event.currentTarget.dataset.path).isFolded) {
@@ -1191,6 +1210,9 @@ function addRefBtn(fileName, listing) {
 	let divElem = document.createElement('div');
 	var elem = document.createElement('button');
 	let filePath = fileName;
+	if (!path.isAbsolute(filePath)) {
+		filePath = path.join(rootDirectory, filePath);
+	}
 
 	// This might yield error ecause filePath is not possiblye valid yml file.
 	let fileYaml;

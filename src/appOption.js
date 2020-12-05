@@ -174,7 +174,7 @@ Options:
 
 			let checker = new Checker();
 			gdmlList.forEach((item) => {
-				checker.addNode(item.path, item.content);
+				checker.addNode(item.path, item.content, directory);
 			})
 			let checkerList = checker.checkDependencies();
 

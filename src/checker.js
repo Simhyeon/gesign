@@ -59,7 +59,7 @@ module.exports = {
 		// if not newly created and has multiple children, then set current node's
 		// level to highest child's level + 1
 		// METHOD ::: Add node to nodesMap
-		addNode(value, content) {
+		addNode(value, content, rootPath) {
 			// Add node if doesn't already exist
 			let targetNode;
 			let createNew = false;
@@ -73,6 +73,11 @@ module.exports = {
 				targetNode = this.getNode(value);
 				targetNode.lastModified = content["lastModified"];
 				targetNode.setChildren(content["reference"]);
+				targetNode.childrenSet.forEach(child => {
+					if (!path.isAbsolute(child)) {
+						child = path.join(rootPath, child);
+					}
+				});
 			}
 
 			// There can be three statuses

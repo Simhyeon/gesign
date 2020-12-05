@@ -22,7 +22,7 @@ if (processStatus !== null && processStatus.doExit) {
 
 // ELECTRON Initiation
 function createWindow() {
-	win = new BrowserWindow({minWidth: 800, minHeight: 500, webPreferences: {
+	win = new BrowserWindow({minWidth: 400, minHeight: 500, width: 400, height: 500 , webPreferences: {
 		nodeIntegration: true,
 		enableRemoteModule: true,
 		nativeWindowOpen: true
