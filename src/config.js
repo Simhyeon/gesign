@@ -2,6 +2,7 @@ const fs = require("fs");
 //const self = module.exports;
 
 module.exports = {
+	CONFIGFILENAME : "gesign_config.json",
 	// CLASS ::: Config class that handles all logics related to gesign_config.js file
 	init: function(filePath) {
 		this.readFromFile(filePath);

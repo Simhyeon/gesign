@@ -14,6 +14,7 @@ const _ = require("lodash");
 const cli = require("./cli");
 const gdml = require('./gdml');
 const config = require("./config");
+const shared = require("./shared");
 const {FileTree} = require("./filetree");
 const template = require('./template')
 const CliOption = cli.CliOption;
@@ -28,7 +29,8 @@ let prevFileTree = null;
 let fileTree = null;
 
 // VARAIBLE ::: Root direoctry given by user as a root for recursive file detection.
-let rootDirectory = null;
+// DEBUG ::: Testing
+//let rootDirectory = null;
 // VARAIBLE ::: Total list of gdml files's object 
 // {path : string, status: string}
 let totalGdmlList = new Array();
@@ -121,7 +123,7 @@ cli.execFlagAction(dirOption);
 // EVENT ::: Add new Document to tab
 document.querySelector("#addNewDocument").addEventListener('click', () => {
 
-	if (rootDirectory == null) return;
+	if (shared.rootDirectory == null) return;
 
 	// Hide Button
 	if (tabObjects.length !== 0) {
@@ -138,13 +140,13 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	currentTabIndex = tabObjects.length;
 	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem, config.content["startMode"]);
 
-	var tabObject = newTabObject(false, SAVED, SAVED, true, path.join(rootDirectory, NEWFILENAME), new Set(), gdml.newGdml(), metaElem, editorScreenElem, null, editorInstance);
+	var tabObject = newTabObject(false, SAVED, SAVED, true, path.join(shared.rootDirectory, NEWFILENAME), new Set(), gdml.newGdml(), metaElem, editorScreenElem, null, editorInstance);
 	// LEGACY :::  
 	//var tabObject = {
 		//contentStatus: SAVED, 
 		//refStatus: SAVED, 
 		//manualSave: true, 
-		//path: path.join(rootDirectory, 'new.gdml'), 
+		//path: path.join(shared.rootDirectory, 'new.gdml'), 
 		//refs: new Set() ,
 		//content: gdml.newGdml(),
 		//meta: metaElem, 
@@ -198,7 +200,7 @@ document.querySelector("#checker").addEventListener('click', () => {
 
 // FUNCTION ::: Called by checkerButton event
 function checkerButton() {
-	if (rootDirectory === null) return;
+	if (shared.rootDirectory === null) return;
 
 	// If unsaved tab exists dependency check cannot happen
 	var checkUnsaved = false;
@@ -219,7 +221,7 @@ function checkerButton() {
 			return;
 		}
 		try {
-			checker.addNode(totalGdmlList[i].path, gdml, rootDirectory);
+			checker.addNode(totalGdmlList[i].path, gdml, shared.rootDirectory);
 		} catch (e) {
 			alert("Mutual reference detected from file.\n" + e);
 			return;
@@ -323,10 +325,10 @@ function saveFile() {
 	if (config.content["checkOnSave"]) checkerButton();
 }
 
-// EVENT ::: Open Dialog and set rootDirectory
+// EVENT ::: Open Dialog and set shared.rootDirectory
 document.querySelector("#openDirBtn").addEventListener('click', () => {
-	let newDirectory = rootDirectory;
-	if (rootDirectory === null) newDirectory = givenDirectory
+	let newDirectory = shared.rootDirectory;
+	if (shared.rootDirectory === null) newDirectory = givenDirectory
 	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: newDirectory, properties: ["openDirectory"]}).then((response) => {
 		if(!response.canceled) {
 			// Reset gdml List
@@ -420,7 +422,7 @@ function setRootDirectory(directory) {
 		divElem.appendChild(dirElem);
 
 		// Set variable that decided whether fold or not.
-		doFoldDirectory = (rootDirectory === null || rootDirectory !== directory);
+		doFoldDirectory = (shared.rootDirectory === null || shared.rootDirectory !== directory);
 
 		// If watch already exists then it means that it is not the first time function called.
 		// remove prior watcher and all listmenuButtons's children;
@@ -443,7 +445,7 @@ function setRootDirectory(directory) {
 	// If user is opening new root directory
 	// Remove all existing tabObjects, directory related variables
 	// TODO ::: Check this code, hightly prone to errors
-	if (rootDirectory !== directory && rootDirectory !== null) {
+	if (shared.rootDirectory !== directory && shared.rootDirectory !== null) {
 
 		// Reset tabObjects
 		tabObjects.forEach((tabObject) => {
@@ -454,7 +456,7 @@ function setRootDirectory(directory) {
 		tabObjects = new Array();
 		currentTabIndex = -1;
 	} 
-	// If reopening same rootDirectory then check if tabObjects are still valid
+	// If reopening same shared.rootDirectory then check if tabObjects are still valid
 	else {
 		tabObjects.forEach((tabObject) => {
 			// If tab's content is not saved to a file yet, ignore.
@@ -509,14 +511,14 @@ function setRootDirectory(directory) {
 	}
 
 	// Update root directory
-	rootDirectory = directory;	
+	shared.rootDirectory = directory;	
 
 	// DEBUG ::: 
 	// Cache fileTree becuase retaining fold status
 	// Requires previous fold status from previous FileTree
 	// Such process can be optimized by ignoring folding check when root directory has changed.
 	prevFileTree = fileTree;
-	fileTree = new FileTree(rootDirectory);
+	fileTree = new FileTree(shared.rootDirectory);
 	console.log(prevFileTree);
 	console.log(fileTree);
 	//console.log(JSON.parse(JSON.stringify(prevFileTree)));
@@ -527,8 +529,8 @@ function setRootDirectory(directory) {
 
 	// Add watcher for root directory
 	watcher.push(
-		watch(rootDirectory, (evt, name) => {
-			watchFileChange(rootDirectory, evt, name);
+		watch(shared.rootDirectory, (evt, name) => {
+			watchFileChange(shared.rootDirectory, evt, name);
 		})
 	); 
 }
@@ -565,7 +567,7 @@ function watchFileChange(directory, evt, name) {
 			// Reset variable.
 			if (shouldReload) shouldReload = false;
 			// if file or directory has changed then reload root directory.
-			setRootDirectory(rootDirectory);
+			setRootDirectory(shared.rootDirectory);
 		}
 	} 
 }
@@ -612,7 +614,7 @@ function listMenuButtons(root, files, parentElement, foldDirectory = false) {
 	// Make Directory button with given directory list
 	// If directory is in exclusion list then ignore.
 	dirsArray.forEach((file) => {
-		if (config.exclusionRules().find(rule => path.join(rootDirectory, rule) === path.join(root, file)) !== undefined) {
+		if (config.exclusionRules().find(rule => path.join(shared.rootDirectory, rule) === path.join(root, file)) !== undefined) {
 			console.log("Found exclusion rule ignoring file : " + file);
 			return;
 		}
@@ -623,7 +625,7 @@ function listMenuButtons(root, files, parentElement, foldDirectory = false) {
 	// Make file button with given files list
 	// If file is in exclusion list then ignore.
 	filesArray.forEach((file) => {
-		if (config.exclusionRules().find(rule => path.join(rootDirectory, rule) === path.join(root, file)) !== undefined) {
+		if (config.exclusionRules().find(rule => path.join(shared.rootDirectory, rule) === path.join(root, file)) !== undefined) {
 			console.log("Found exclusion rule ignoring file : " + file);
 			return;
 		}
@@ -733,7 +735,7 @@ function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 					dirElem.click();
 				}
 			} 
-			// If it is a firs time reaeding rootDirectory, 
+			// If it is a firs time reaeding shared.rootDirectory, 
 			// then fold all of directory buttons.
 			else { // prevFileTree == null
 				dirElem.click();
@@ -1112,7 +1114,7 @@ function importTemplate() {
 		targetPath = config.content["templatePath"];
 		isAbsolute = true;
 	} else {
-		targetPath = path.join(rootDirectory, config.content["templatePath"]);
+		targetPath = path.join(shared.rootDirectory, config.content["templatePath"]);
 	}
 	if (!fs.existsSync(targetPath)){
 		if (isAbsolute) {
@@ -1145,7 +1147,7 @@ function exportTemplate() {
 		targetPath = config.content["templatePath"];
 		isAbsolute = true;
 	} else {
-		targetPath = path.join(rootDirectory, config.content["templatePath"]);
+		targetPath = path.join(shared.rootDirectory, config.content["templatePath"]);
 	}
 	if (!fs.existsSync(targetPath)){
 		if (isAbsolute) {
@@ -1215,7 +1217,7 @@ function addRefBtn(fileName, listing) {
 	var elem = document.createElement('button');
 	let filePath = fileName;
 	if (!path.isAbsolute(filePath)) {
-		filePath = path.join(rootDirectory, filePath);
+		filePath = path.join(shared.rootDirectory, filePath);
 	}
 
 	// This might yield error ecause filePath is not possiblye valid yml file.
