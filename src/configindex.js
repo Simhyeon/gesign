@@ -98,9 +98,9 @@ function init() {
 	// Fontsize
 	if (config.fontSize === "small") {
 		document.querySelector("#fontSmall").checked = true;
-	} else if (config.startMode === "middle"){
+	} else if (config.fontSize === "middle"){
 		document.querySelector("#fontMiddle").checked = true;
-	} else if (config.startMode === "large"){
+	} else if (config.fontSize === "large"){
 		document.querySelector("#fontLarge").checked = true;
 	}
 
