@@ -8,7 +8,9 @@ const path = require('path');
 module.exports = {
 	ConfigWindow : class ConfigWindow {
 		constructor() {
-			this.win = new remote.BrowserWindow( {minWidth: 600, minHeight: 700, width : 800, height: 800, modal: true, parent: remote.getCurrentWindow()} );
+			this.win = new remote.BrowserWindow( {minWidth: 600, minHeight: 700, width : 800, height: 800, modal: true, parent: remote.getCurrentWindow(), webPreferences: {
+				nodeIntegration: true
+			}} );
 
 			this.win.loadURL(url.format({
 				pathname: path.join(__dirname, 'configwindow.html'),

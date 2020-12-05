@@ -5,6 +5,7 @@
 		<meta name="viewport" content="width=device-width">
 		<link rel="stylesheet" href="styles.css" type="text/css" media="all">
 		<link rel="stylesheet" href="../node_modules/@fortawesome/fontawesome-free/css/all.css"/>
+		<script src="configindex.js" charset="utf-8"></script>
 		<title>Config Window</title>
 	</head>
 	<body class="bg-gray-100">
@@ -18,6 +19,7 @@
 					<input type="radio" name="startMode" id="startWysiswyg">
 				</div>
 			</div>
+
 			<div class="flex justify-between mb-2">
 				<label class="text-xl">Font size</label>
 				<div>
@@ -29,13 +31,15 @@
 					<input type="radio" name="fontSize" id="fontLarge">
 				</div>
 			</div>
+
 			<div class="flex justify-between mb-2">
 				<label for="checkOnSave" class="text-xl">Check depdendencies on save</label>
 				<input type="checkbox" id="checkOnSave" name="checkOnSave">
 			</div>
+
 			<div class="flex justify-between mb-2">
 				<label class="text-xl">Template directory</label>
-				<button class="bg-gray-200 py-1 px-2 rounded border-gray-400 border-2 hover:opacity-gray-60">select</button>
+				<button id="addTemplatePath" class="bg-gray-200 py-1 px-2 rounded border-gray-400 border-2 hover:opacity-gray-60">select</button>
 			</div>
 			<div class="bg-white p-1 mb-2 rounded"> This is path </div>
 
@@ -43,9 +47,7 @@
 				<div>Exclusion rules</div>
 				<div id="exclusionContainer" class="flex flex-col bg-white rounded">
 					<div id="exclusionList">
-						<div class="flex"><div class="m-1 px-2 py-1 overflow-x-auto whitespace-nowrap mr-4">This is path to exclusion rule</div><button class="hover:opacity-75 mr-2 h-auto"><i class="far fa-trash-alt"></i></button></div>
-						<div class="flex"><div class="m-1 px-2 py-1 overflow-x-auto whitespace-nowrap mr-4">This is path to exclusion rule aaaaaaaaaaaaaaaaaaaaaaaaaaaaa</div><button class="hover:opacity-75 mr-2 h-auto"><i class="far fa-trash-alt"></i></button></div>
-						<div class="flex"><div class="m-1 px-2 py-1 overflow-x-auto whitespace-nowrap mr-4">This is path to exclusion rule</div><button class="hover:opacity-75 mr-2 h-auto"><i class="far fa-trash-alt"></i></button></div>
+						<div class="flex"><div class="m-1 px-2 py-1 overflow-x-auto whitespace-nowrap mr-4">This is path to exclusion rule</div><button class="hover:opacity-75 mr-2 h-auto"><i class="removeRule far fa-trash-alt"></i></button></div>
 					</div>
 					<hr class="mx-2">
 					<button id="addExclusionRule" class="m-auto hover:opacity-75">+</button>

@@ -13,7 +13,7 @@ const watch = require("node-watch");
 const _ = require("lodash");
 const cli = require("./cli");
 const gdml = require('./gdml');
-const {Config} = require("./config");
+const config = require("./config");
 const {FileTree} = require("./filetree");
 const template = require('./template')
 const CliOption = cli.CliOption;
@@ -69,7 +69,9 @@ const metaBar = document.querySelector("#metaBar");
 const editorScreen = document.querySelector("#editorScreen");
 
 // VARAIBLE ::: Config class
-let config = new Config();
+// DEBUG ::: Chaning from class methods to exports
+//let config = new Config();
+
 // ----------------------------------------------------------------------------
 // INITIATION ::: Execute multiple initiation operation. 
 // Editorscreen should not be displayed but cloned and then set visible.
@@ -394,10 +396,12 @@ function setRootDirectory(directory) {
 	let doFoldDirectory = true;
 	let files;
 
-	try {
+	//try {
 		files = fs.readdirSync(directory);
 		// Set directory's config file to current directory's config if exists.
-		config.readFromFile(path.join(directory, "gesign_config.json"));
+		config.init(path.join(directory, "gesign_config.json"));
+		console.log("TESTING");
+		// DEUBG ::: config.readFromFile(path.join(directory, "gesign_config.json"));
 		// Change font size according to font size
 		setFontSize();
 
@@ -429,9 +433,9 @@ function setRootDirectory(directory) {
 			watcher = new Array();
 		}
 
-	} catch(error) {
-		return console.error('Unable to scan directory: ' + error);
-	}
+	//} catch(error) {
+		//return console.error('Unable to scan directory: ' + error);
+	//}
 
 	// Disable Help text on startup
 	document.querySelector("#helpText").style.display = "none";
@@ -608,7 +612,7 @@ function listMenuButtons(root, files, parentElement, foldDirectory = false) {
 	// Make Directory button with given directory list
 	// If directory is in exclusion list then ignore.
 	dirsArray.forEach((file) => {
-		if (config.getExclusionRules().find(rule => path.join(rootDirectory, rule) === path.join(root, file)) !== undefined) {
+		if (config.exclusionRules().find(rule => path.join(rootDirectory, rule) === path.join(root, file)) !== undefined) {
 			console.log("Found exclusion rule ignoring file : " + file);
 			return;
 		}
@@ -619,7 +623,7 @@ function listMenuButtons(root, files, parentElement, foldDirectory = false) {
 	// Make file button with given files list
 	// If file is in exclusion list then ignore.
 	filesArray.forEach((file) => {
-		if (config.getExclusionRules().find(rule => path.join(rootDirectory, rule) === path.join(root, file)) !== undefined) {
+		if (config.exclusionRules().find(rule => path.join(rootDirectory, rule) === path.join(root, file)) !== undefined) {
 			console.log("Found exclusion rule ignoring file : " + file);
 			return;
 		}
@@ -1243,7 +1247,7 @@ function addRefBtn(fileName, listing) {
 	elem.textContent = path.basename(filePath);
 	elem.dataset.path = filePath;
 	elem.addEventListener('click', loadGdmlToEditor);
-	elem.classList.add("font-semibold");
+	elem.classList.add("font-bold");
 
 	// TODO :: Make close button
 	let closeButton = document.createElement('button');
