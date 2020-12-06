@@ -20,6 +20,9 @@ const template = require('./template')
 const CliOption = cli.CliOption;
 const {ConfigWindow} = require('./configwindow');
 
+// VARIABLE ::: variable reserved for dragging
+let dragged = null;
+
 /// VARIABLE ::: Manual reload flag
 let shouldReload = false;
 
@@ -442,32 +445,6 @@ function setRootDirectory(directory) {
 		sideMenu.appendChild(divElem);
 		divElem.appendChild(dirElem);
 
-		// DEBUG ::: 
-		//divElem.draggable = true;
-		//divElem.addEventListener('dragover', (event) => {
-			//event.preventDefault();
-		//}, false);
-	
-		//divElem.addEventListener('dragstart', (event) => {
-			//event.dataTransfer.setData('text/plain', null);
-			////dragged = event.target;
-		//}, false);
-	
-		//divElem.addEventListener('drop', (event) => {
-			//// TODO ::: Check where the mouse position is 
-			//// Change the order according to the mouse position.
-			//// Use dragged object to change order. use insertbefore either insertafter
-			////
-			//let rect = event.currentTarget.getBoundingClientRect();
-			//let x = event.clientX - rect.left; //x position within the element.
-	
-			//if (rect.width / 2 >= x) {
-				////insertbefore
-			//} else if (rect.width / 2 < x) {
-				////insertafter
-			//}
-	
-		//}, false);
 
 		// Set variable that decided whether fold or not.
 		doFoldDirectory = (shared.rootDirectory === null || shared.rootDirectory !== directory);
@@ -971,13 +948,68 @@ function addNewTab(filePath) {
 	let btnElem = document.createElement('button');
 
 	//divElem.classList.add("blankButton", "bg-white");
-	divElem.classList.add( "text-gray-200", "font-bold", "py-1", "px-2", UNDEFINEDCOLOR, "hover:opacity-50");
+	divElem.classList.add( "text-gray-200", "font-bold", "py-1", "px-2", UNDEFINEDCOLOR, "hover:opacity-50", "tabParent");
+	// DEBUG ::: 
+	divElem.draggable = true;
+	divElem.addEventListener('dragover', (event) => {
+		event.preventDefault();
+	}, false);
+
+	divElem.addEventListener('dragstart', (event) => {
+		event.dataTransfer.setData('text/plain', null);
+		dragged = event.currentTarget;
+	}, false);
+
+	divElem.addEventListener('drop', (event) => {
+		if (!dragged.classList.contains("tabParent") || dragged === null) {
+			dragged = null;
+			return;
+		}
+		// TODO ::: Check where the mouse position is 
+		// Change the order according to the mouse position.
+		// Use dragged object to change order. use insertbefore either insertafter
+		//
+		let rect = event.currentTarget.getBoundingClientRect();
+		let x = event.clientX - rect.left; //x position within the element.
+		console.log(x);
+		if (rect.width / 2 >= x) {
+			console.log("Insert before");
+			//insertbefore
+			//
+			// Get siblings of dragged and increase index by 1
+			// remove dragged from parent and add before target.
+			event.currentTarget.parentElement.insertBefore(dragged, event.currentTarget);
+			//dragged.querySelector(".tabBtn").dataset.index = Number(event.currentTarget.querySelector(".tabBtn").dataset.index);
+			//let next = dragged.nextElementSibling;
+			//while (next) {
+				//let button = next.querySelector('.tabBtn');
+				//button.dataset.index = Number(button.dataset.index) + 1;
+				//next = next.nextSibling;
+			//}
+		} else if (rect.width / 2 < x) {
+			console.log("Insert After");
+			//insertafter
+			//
+			// Get siblings of dragged and increase index by 1
+			// remove dragged from parent and add before target.
+			event.currentTarget.parentElement.insertBefore(dragged, event.currentTarget.nextSibling);
+			//dragged.querySelector(".tabBtn").dataset.index = Number(event.currentTarget.querySelector(".tabBtn").dataset.index) + 1;
+			//let next = dragged.nextSibling;
+			//while (next) {
+				//let button = next.querySelector('.tabBtn');
+				//button.dataset.index = Number(button.dataset.index) + 1;
+				//next = next.nextSibling;
+			//}
+		}
+
+	}, false);
 
 	btnElem.dataset.path = filePath;
 	btnElem.dataset.index = tabObjects.length - 1;
 	btnElem.textContent = path.basename(filePath);
 	btnElem.addEventListener('click', loadGdmlToEditor);
 	btnElem.addEventListener('dblclick', pinTab);
+	btnElem.classList.add("tabBtn");
 
 	// TODO :: Make close button
 	let closeButton = document.createElement('button');
@@ -1023,7 +1055,7 @@ function closeTab(path) {
 		// if Index is bigger than currentTabIndex; Do nothing 
 		//
 		// if Index is same with currentTabIndex;
-		if (index == currentTabIndex) {
+		if (index === currentTabIndex) {
 			// if index is bigger than 0 decrease by 1
 			// else if index === 0 then, don't need to change index.
 			// Other remaining element should be in 0 index
@@ -1037,6 +1069,10 @@ function closeTab(path) {
 			tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
 			tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
 
+			console.log(currentTabIndex);
+			console.log(index);
+			console.log(tabObjects);
+			console.log(tabObjects[index]);
 			statusGraphics(tabObjects[index].content["status"]);
 		}
 		// if Index is lower than currentTabIndex
