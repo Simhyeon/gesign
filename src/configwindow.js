@@ -28,7 +28,6 @@ module.exports = {
 			this.win.setMenuBarVisibility(false);
 			this.win.setAutoHideMenuBar(true);
 
-
 			this.win.loadURL(url.format({
 				pathname: path.join(__dirname, 'configwindow.html'),
 				protocol: "file",
