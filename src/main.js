@@ -28,11 +28,18 @@ function createWindow() {
 		config: null
 	};
 
-	win = new BrowserWindow({minWidth: 400, minHeight: 500, width: 400, height: 500 , webPreferences: {
-		nodeIntegration: true,
-		enableRemoteModule: true,
-		nativeWindowOpen: true
-	}});
+	win = new BrowserWindow({
+		minWidth: 400, 
+		minHeight: 500, 
+		width: 400, 
+		height: 500 , 
+		webPreferences: {
+			nodeIntegration: true,
+			enableRemoteModule: true,
+			nativeWindowOpen: true
+		},
+		icon : path.join(__dirname, 'img/icon.png')
+	});
 	win.setMenuBarVisibility(false);
 	win.setAutoHideMenuBar(true);
 	win.loadURL(url.format({
