@@ -13,10 +13,12 @@ const watch = require("node-watch");
 const _ = require("lodash");
 const cli = require("./cli");
 const gdml = require('./gdml');
-const {Config} = require("./config");
+const config = require("./config");
+const shared = require("./shared");
 const {FileTree} = require("./filetree");
 const template = require('./template')
 const CliOption = cli.CliOption;
+const {ConfigWindow} = require('./configwindow');
 
 /// VARIABLE ::: Manual reload flag
 let shouldReload = false;
@@ -27,7 +29,8 @@ let prevFileTree = null;
 let fileTree = null;
 
 // VARAIBLE ::: Root direoctry given by user as a root for recursive file detection.
-let rootDirectory = null;
+// DEBUG ::: Testing
+//let rootDirectory = null;
 // VARAIBLE ::: Total list of gdml files's object 
 // {path : string, status: string}
 let totalGdmlList = new Array();
@@ -51,8 +54,8 @@ const NEWFILENAME = "new*.gdml";
 
 // VARAIBLE ::: COLOR value is based on tailwind-css class names
 const UNDEFINEDCOLOR = "bg-gray-600";
-const HIGHLIGHT = "bg-white"; 
-const NORMALBG = "bg-gray-300";
+const HIGHLIGHT = "border-b-2"; 
+const NORMALBG = "opacity-50";
 const OUTDATEDCOLOR = "bg-red-500";
 const UPTODATECOLOR = "bg-blue-500";
 // BREAKABLE ::: This is really hard code and may breakble in later releases of toast ui editor.
@@ -68,7 +71,9 @@ const metaBar = document.querySelector("#metaBar");
 const editorScreen = document.querySelector("#editorScreen");
 
 // VARAIBLE ::: Config class
-let config = new Config();
+// DEBUG ::: Chaning from class methods to exports
+//let config = new Config();
+
 // ----------------------------------------------------------------------------
 // INITIATION ::: Execute multiple initiation operation. 
 // Editorscreen should not be displayed but cloned and then set visible.
@@ -118,12 +123,19 @@ cli.execFlagAction(dirOption);
 // EVENT ::: Add new Document to tab
 document.querySelector("#addNewDocument").addEventListener('click', () => {
 
-	if (rootDirectory == null) return;
+	if (shared.rootDirectory == null) return;
 
-	// Hide Button
-	if (tabObjects.length !== 0) {
-		hideCurrentTab();
-	}
+	let tabCache = -1;
+	if(currentTabIndex !== -1) {
+		// HIde when tab is either temporary
+		if (tabObjects[currentTabIndex].temp ) {
+			// Or tab is loaded from refernce button
+			// If the latter than set instance as non temporary.
+			tabCache = currentTabIndex;
+		} else {
+			hideCurrentTab();
+		}
+	} // else if tab is not opened at all don't have to hide anything.
 
 	let metaElem = metaBar.cloneNode(true);
 	let editorScreenElem = editorScreen.cloneNode(true);
@@ -135,13 +147,13 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	currentTabIndex = tabObjects.length;
 	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem, config.content["startMode"]);
 
-	var tabObject = newTabObject(false, SAVED, SAVED, true, path.join(rootDirectory, NEWFILENAME), new Set(), gdml.newGdml(), metaElem, editorScreenElem, null, editorInstance);
+	var tabObject = newTabObject(false, SAVED, SAVED, true, path.join(shared.rootDirectory, NEWFILENAME), new Set(), gdml.newGdml(), metaElem, editorScreenElem, null, editorInstance);
 	// LEGACY :::  
 	//var tabObject = {
 		//contentStatus: SAVED, 
 		//refStatus: SAVED, 
 		//manualSave: true, 
-		//path: path.join(rootDirectory, 'new.gdml'), 
+		//path: path.join(shared.rootDirectory, 'new.gdml'), 
 		//refs: new Set() ,
 		//content: gdml.newGdml(),
 		//meta: metaElem, 
@@ -186,6 +198,12 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	metaElem.addEventListener('drop', (event) => {
 		addRefBtn(event.dataTransfer.getData("text"), false);
 	});
+
+	// If tabcache has been saved
+	if (tabCache !== -1) {
+		closeTab(tabObjects[tabCache].path);
+		console.log(JSON.parse(JSON.stringify(tabObjects.length)));
+	}
 });
 
 // EVENT ::: Make Checker object and add all gdml documents as NodeInstance to checkerinstance
@@ -195,7 +213,7 @@ document.querySelector("#checker").addEventListener('click', () => {
 
 // FUNCTION ::: Called by checkerButton event
 function checkerButton() {
-	if (rootDirectory === null) return;
+	if (shared.rootDirectory === null) return;
 
 	// If unsaved tab exists dependency check cannot happen
 	var checkUnsaved = false;
@@ -216,7 +234,7 @@ function checkerButton() {
 			return;
 		}
 		try {
-			checker.addNode(totalGdmlList[i].path, gdml);
+			checker.addNode(totalGdmlList[i].path, gdml, shared.rootDirectory);
 		} catch (e) {
 			alert("Mutual reference detected from file.\n" + e);
 			return;
@@ -246,6 +264,8 @@ function checkerButton() {
 		return 0;
 	});
 
+	console.log(totalGdmlList.length === checkerList.length);
+
 	// TODO ::: Should change statuses of menu buttons 
 	// In first sight it should be ok becuase fs filewatch will detect status change and will
 	// read from root Directory.
@@ -254,10 +274,17 @@ function checkerButton() {
 		// If Status has changed after dependency check, apply changes to file
 		// With this approcah caching(memory usage) is minified and I/O is maximized.
 		if (totalGdmlList[j].status !== checkerList[j].status) {
+			//console.log("UPdating : " + totalGdmlList[j].path);
 			let readFile = yaml.load(fs.readFileSync(totalGdmlList[j].path), 'utf8');
 			readFile["status"] = checkerList[j].status;
 			fs.writeFileSync(totalGdmlList[j].path, yaml.safeDump(readFile), 'utf8');
 			shouldReload = true;
+
+			if (currentTabIndex !== -1 && 
+				totalGdmlList[j].path === tabObjects[currentTabIndex].path) {
+				//console.log("Should update current statusGraphic");
+				statusGraphics(checkerList[j].status);
+			}
 		}
 	}
 }
@@ -273,7 +300,7 @@ function saveFile() {
 	if (tabObjects.length === 0) return;
 	// Get currentTabObject for easy reading
 	let currentTabObject = tabObjects[currentTabIndex];
-	console.log(currentTabObject);
+	//console.log(currentTabObject);
 	if(currentTabObject.contentStatus !== UNSAVED && currentTabObject.refStatus !== UNSAVED) return; // if file is not unsaved then skip operation
 
 	// Update content body with editor's content
@@ -320,10 +347,10 @@ function saveFile() {
 	if (config.content["checkOnSave"]) checkerButton();
 }
 
-// EVENT ::: Open Dialog and set rootDirectory
+// EVENT ::: Open Dialog and set shared.rootDirectory
 document.querySelector("#openDirBtn").addEventListener('click', () => {
-	let newDirectory = rootDirectory;
-	if (rootDirectory === null) newDirectory = givenDirectory
+	let newDirectory = shared.rootDirectory;
+	if (shared.rootDirectory === null) newDirectory = givenDirectory
 	remote.dialog.showOpenDialog(remote.getCurrentWindow(),{defaultPath: newDirectory, properties: ["openDirectory"]}).then((response) => {
 		if(!response.canceled) {
 			// Reset gdml List
@@ -393,10 +420,11 @@ function setRootDirectory(directory) {
 	let doFoldDirectory = true;
 	let files;
 
-	try {
+	//try {
 		files = fs.readdirSync(directory);
 		// Set directory's config file to current directory's config if exists.
-		config.readFromFile(path.join(directory, "gesign_config.json"));
+		config.init(path.join(directory, "gesign_config.json"));
+		// DEUBG ::: config.readFromFile(path.join(directory, "gesign_config.json"));
 		// Change font size according to font size
 		setFontSize();
 
@@ -415,7 +443,7 @@ function setRootDirectory(directory) {
 		divElem.appendChild(dirElem);
 
 		// Set variable that decided whether fold or not.
-		doFoldDirectory = (rootDirectory === null || rootDirectory !== directory);
+		doFoldDirectory = (shared.rootDirectory === null || shared.rootDirectory !== directory);
 
 		// If watch already exists then it means that it is not the first time function called.
 		// remove prior watcher and all listmenuButtons's children;
@@ -428,9 +456,9 @@ function setRootDirectory(directory) {
 			watcher = new Array();
 		}
 
-	} catch(error) {
-		return console.error('Unable to scan directory: ' + error);
-	}
+	//} catch(error) {
+		//return console.error('Unable to scan directory: ' + error);
+	//}
 
 	// Disable Help text on startup
 	document.querySelector("#helpText").style.display = "none";
@@ -438,7 +466,7 @@ function setRootDirectory(directory) {
 	// If user is opening new root directory
 	// Remove all existing tabObjects, directory related variables
 	// TODO ::: Check this code, hightly prone to errors
-	if (rootDirectory !== directory && rootDirectory !== null) {
+	if (shared.rootDirectory !== directory && shared.rootDirectory !== null) {
 
 		// Reset tabObjects
 		tabObjects.forEach((tabObject) => {
@@ -449,7 +477,7 @@ function setRootDirectory(directory) {
 		tabObjects = new Array();
 		currentTabIndex = -1;
 	} 
-	// If reopening same rootDirectory then check if tabObjects are still valid
+	// If reopening same shared.rootDirectory then check if tabObjects are still valid
 	else {
 		tabObjects.forEach((tabObject) => {
 			// If tab's content is not saved to a file yet, ignore.
@@ -475,15 +503,15 @@ function setRootDirectory(directory) {
 						tabObject.manualSave = true;
 						tabObject.tab.textContent = path.basename(tabObject.path) + UNSAVEDSYMBOL;
 					} 
-					// If editor content is not "unsaved"
+					// If editor content is saved or not "unsaved"
 					// just copy file contents to editor
 					else {
+						tabObject.content = readContent;
 						// TODO ::: THIS might be bloat, however this app is bloat anyway.
 						// Reason why checking equality before setting, although it looks redundant
 						// is that pasting makes cursor to move to start area which is not an ideal
 						// experience for end users.
 						if (tabObject.editor.getMarkdown().trim() !== readContent["body"].trim()) {
-							tabObject.content = readContent;
 							tabObject.editor.setMarkdown(readContent["body"], false);
 						}
 
@@ -504,16 +532,16 @@ function setRootDirectory(directory) {
 	}
 
 	// Update root directory
-	rootDirectory = directory;	
+	shared.rootDirectory = directory;	
 
 	// DEBUG ::: 
 	// Cache fileTree becuase retaining fold status
 	// Requires previous fold status from previous FileTree
 	// Such process can be optimized by ignoring folding check when root directory has changed.
 	prevFileTree = fileTree;
-	fileTree = new FileTree(rootDirectory);
-	console.log(prevFileTree);
-	console.log(fileTree);
+	fileTree = new FileTree(shared.rootDirectory);
+	//console.log(prevFileTree);
+	//console.log(fileTree);
 	//console.log(JSON.parse(JSON.stringify(prevFileTree)));
 	//console.log(JSON.parse(JSON.stringify(fileTree)));
 
@@ -522,8 +550,8 @@ function setRootDirectory(directory) {
 
 	// Add watcher for root directory
 	watcher.push(
-		watch(rootDirectory, (evt, name) => {
-			watchFileChange(rootDirectory, evt, name);
+		watch(shared.rootDirectory, (evt, name) => {
+			watchFileChange(shared.rootDirectory, evt, name);
 		})
 	); 
 }
@@ -538,11 +566,11 @@ function watchFileChange(directory, evt, name) {
 			if (prevFileTree !== null) {
 				// Result is either null or node.
 				// Null means given name(path) doesn't match given root directory.
-				console.log("Currently trying to check if file is in FileTree");
-				console.log("Changed file name is :");
-				console.log(JSON.parse(JSON.stringify(name)));
-				console.log("Previous FileTree content");
-				console.log(JSON.parse(JSON.stringify(prevFileTree)));
+				//console.log("Currently trying to check if file is in FileTree");
+				//console.log("Changed file name is :");
+				//console.log(JSON.parse(JSON.stringify(name)));
+				//console.log("Previous FileTree content");
+				//console.log(JSON.parse(JSON.stringify(prevFileTree)));
 				let result = prevFileTree.getNode(name);
 				if (result === undefined) {
 					alert("Failed to resolve file hierarchy. Please reload directory.");
@@ -560,7 +588,9 @@ function watchFileChange(directory, evt, name) {
 			// Reset variable.
 			if (shouldReload) shouldReload = false;
 			// if file or directory has changed then reload root directory.
-			setRootDirectory(rootDirectory);
+			setRootDirectory(shared.rootDirectory);
+		} else if (name === path.join(shared.rootDirectory, config.CONFIGFILENAME)) {
+			config.init(name);
 		}
 	} 
 }
@@ -585,6 +615,10 @@ document.querySelector("#printBtn").addEventListener('click', () => {
     }, 1000);
 });
 
+document.querySelector("#configWindow").addEventListener('click', () => {
+	let configWindow = new ConfigWindow();
+})
+
 // TODO ::: Make children hierarchy better not just nested.
 // Add separator, Indentation might be good but it will make 
 // spacing look ugly considier vertical spacing for 
@@ -603,7 +637,7 @@ function listMenuButtons(root, files, parentElement, foldDirectory = false) {
 	// Make Directory button with given directory list
 	// If directory is in exclusion list then ignore.
 	dirsArray.forEach((file) => {
-		if (config.getExclusionRules().find(rule => path.join(rootDirectory, rule) === path.join(root, file)) !== undefined) {
+		if (config.exclusionRules().find(rule => path.join(shared.rootDirectory, rule) === path.join(root, file)) !== undefined) {
 			console.log("Found exclusion rule ignoring file : " + file);
 			return;
 		}
@@ -614,7 +648,7 @@ function listMenuButtons(root, files, parentElement, foldDirectory = false) {
 	// Make file button with given files list
 	// If file is in exclusion list then ignore.
 	filesArray.forEach((file) => {
-		if (config.getExclusionRules().find(rule => path.join(rootDirectory, rule) === path.join(root, file)) !== undefined) {
+		if (config.exclusionRules().find(rule => path.join(shared.rootDirectory, rule) === path.join(root, file)) !== undefined) {
 			console.log("Found exclusion rule ignoring file : " + file);
 			return;
 		}
@@ -689,7 +723,7 @@ function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 	divElem.classList.add("directory", "flex", "flex-col");
 	dirElem.classList.add("dirButton","font-bold", "text-left", "py-2", "px-4", "text-gray-200", UNDEFINEDCOLOR, "mb-1", "w-full", "hover:opacity-50");
 	let fullPath = path.join(root, dirName);
-	dirElem.textContent = "⌄" + dirName;
+	dirElem.textContent = "> " + dirName;
 	dirElem.dataset.path = fullPath;
 	dirElem.addEventListener('click', toggleChildren);
 	parentElement.appendChild(divElem);
@@ -724,7 +758,7 @@ function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 					dirElem.click();
 				}
 			} 
-			// If it is a firs time reaeding rootDirectory, 
+			// If it is a firs time reaeding shared.rootDirectory, 
 			// then fold all of directory buttons.
 			else { // prevFileTree == null
 				dirElem.click();
@@ -758,8 +792,9 @@ function loadGdmlToEditor(event) {
 	if (tabIndex === -1) 
 		tabIndex = isTabPresent(event.currentTarget.dataset.path);
 
+	console.log(tabIndex);
 	// If file is already open thus tab exists
-	if(tabIndex !== -1){
+	if(tabIndex !== -1 && !isNaN(tabIndex)){
 		// Hide CurrentTab
 		hideCurrentTab();
 
@@ -772,6 +807,8 @@ function loadGdmlToEditor(event) {
 		tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
 		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
 		// Update Status Bar
+		console.log("Loading exsiting tab");
+		console.log(tabObjects[currentTabIndex].content["status"]);
 		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 
 		// If prior tab was temporary delete tab
@@ -787,8 +824,16 @@ function loadGdmlToEditor(event) {
 	// Hide currently visible tab or delte if tab is temporary.
 	let tabCache = -1;
 	if(currentTabIndex !== -1) {
-		if (tabObjects[currentTabIndex].temp) {
-			tabCache = currentTabIndex;
+		// HIde when tab is either temporary
+		if (tabObjects[currentTabIndex].temp ) {
+			// Or tab is loaded from refernce button
+			// If the latter than set instance as non temporary.
+			if (event.currentTarget.classList.contains("refBtn")) {
+				hideCurrentTab();
+				tabObjects[currentTabIndex].temp = false;
+			} else {
+				tabCache = currentTabIndex;
+			}
 		} else {
 			hideCurrentTab();
 		}
@@ -810,21 +855,24 @@ function loadGdmlToEditor(event) {
 		metaElem.style.display = "";
 		editorScreenElem.style.display = "";
 
+		editorScreenElem.addEventListener('drop', dropToPasteFile);
+
 		// Make currentTabIndex to be same as length minus 1 which is 
 		// last index of newly edited array.
 		// CurrentTab Index should be equal to length because in this line length is not added by 1.
 		currentTabIndex = tabObjects.length;
 		let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
 
-		var tabObject = newTabObject(true, SAVED, SAVED, false, filePath, new Set() , yaml.safeLoad(data, 'utf8'), metaElem, editorScreenElem, null, editorInstance);
+		var tabObject = newTabObject(config.content.unpinAuto , SAVED, SAVED, false, filePath, new Set() , yaml.safeLoad(data, 'utf8'), metaElem, editorScreenElem, null, editorInstance);
 
 		// LEGACY ::: tabObject before newTabObject method should be here for reference
 		//var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: false, path: filePath, ref: new Set() ,content: yaml.safeLoad(data, 'utf8'), meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
 		
 		tabObjects.push(tabObject);
-		editorInstance.setMarkdown(tabObject.content["body"], false);
+		editorInstance.setMarkdown(tabObject.content["body"].trim(), false);
 		editorInstance.changeMode(config.content["startMode"]);
 
+		// ANONYMOUSE FUNCTION
 		// If editor's content changes and content is different from original one
 		// then set status to unsaved.
 		// Also change tab's name to somewhat distinguishable.
@@ -873,6 +921,13 @@ function loadGdmlToEditor(event) {
 	});
 }
 
+function pinTab(event) {
+	// Get event's tab Index
+	let tabIndex = Number(event.currentTarget.dataset.index);
+
+	tabObjects[tabIndex].temp = false;
+}
+
 // FUNCTION ::: Check if tab is present in tabArray, namely tabObjects (plural)
 function isTabPresent(filePath) {
 	for (var i = 0, len = tabObjects.length; i < len; i++) {
@@ -888,17 +943,19 @@ function addNewTab(filePath) {
 	let divElem = document.createElement('div');
 	let btnElem = document.createElement('button');
 
-	divElem.classList.add("blankButton", "bg-white");
+	//divElem.classList.add("blankButton", "bg-white");
+	divElem.classList.add( "text-gray-200", "font-bold", "py-1", "px-2", UNDEFINEDCOLOR, "hover:opacity-50");
 
 	btnElem.dataset.path = filePath;
 	btnElem.dataset.index = tabObjects.length - 1;
 	btnElem.textContent = path.basename(filePath);
 	btnElem.addEventListener('click', loadGdmlToEditor);
+	btnElem.addEventListener('dblclick', pinTab);
 
 	// TODO :: Make close button
 	let closeButton = document.createElement('button');
 	let iconElement = document.createElement('i');
-	iconElement.classList.add("fas", "fa-times", "pl-1");
+	iconElement.classList.add("fas", "fa-times", "pl-1", "hover:opacity-50");
 	closeButton.addEventListener('click', (event) => {
 		// Get parent target and close
 		// Also stop propagation so that clicking parent button should not be triggered.
@@ -983,6 +1040,10 @@ function toggleChildren(event) {
 		siblings.push(current);
 		current = current.nextElementSibling;
 	}
+
+	// If directory does not have any siblings
+	// which means there are no itemes to be toggled.
+	if (siblings.length == 0) return;
 
 	// Currently folded
 	if (fileTree.getNode(event.currentTarget.dataset.path).isFolded) {
@@ -1089,7 +1150,7 @@ function importTemplate() {
 		targetPath = config.content["templatePath"];
 		isAbsolute = true;
 	} else {
-		targetPath = path.join(rootDirectory, config.content["templatePath"]);
+		targetPath = path.join(shared.rootDirectory, config.content["templatePath"]);
 	}
 	if (!fs.existsSync(targetPath)){
 		if (isAbsolute) {
@@ -1122,7 +1183,7 @@ function exportTemplate() {
 		targetPath = config.content["templatePath"];
 		isAbsolute = true;
 	} else {
-		targetPath = path.join(rootDirectory, config.content["templatePath"]);
+		targetPath = path.join(shared.rootDirectory, config.content["templatePath"]);
 	}
 	if (!fs.existsSync(targetPath)){
 		if (isAbsolute) {
@@ -1191,6 +1252,9 @@ function addRefBtn(fileName, listing) {
 	let divElem = document.createElement('div');
 	var elem = document.createElement('button');
 	let filePath = fileName;
+	if (!path.isAbsolute(filePath)) {
+		filePath = path.join(shared.rootDirectory, filePath);
+	}
 
 	// This might yield error ecause filePath is not possiblye valid yml file.
 	let fileYaml;
@@ -1221,7 +1285,7 @@ function addRefBtn(fileName, listing) {
 	elem.textContent = path.basename(filePath);
 	elem.dataset.path = filePath;
 	elem.addEventListener('click', loadGdmlToEditor);
-	elem.classList.add("font-semibold");
+	elem.classList.add("font-bold", "refBtn");
 
 	// TODO :: Make close button
 	let closeButton = document.createElement('button');
@@ -1338,4 +1402,37 @@ function setFontSize() {
 .tui-md-heading6 {
 	font-size : ${ 1.077 * multiplier}rem !important;
 }`;
+}
+
+function dropToPasteFile(ev) {
+	console.log('File(s) dropped');
+
+	// Prevent default behavior (Prevent file from being opened)
+	ev.preventDefault();
+
+	if (ev.dataTransfer.items) {
+		// If dropped items aren't files, reject them
+		if (ev.dataTransfer.items[0].kind === 'file') {
+			let file = ev.dataTransfer.items[0].getAsFile();
+			if (path.extname(file.name).toLowerCase() === ".gdml") {
+				file.text().then(item => {
+					let currentTabObject = tabObjects[currentTabIndex];
+					let content = yaml.safeLoad(item);
+					currentTabObject.editor.setMarkdown(content.body);
+					currentTabObject.contentStatus = UNSAVED;
+					currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
+
+				});
+			} else if (path.extname(file.name).toLowerCase() === ".md") {
+				file.text().then(item => {
+					let currentTabObject = tabObjects[currentTabIndex];
+					currentTabObject.editor.setMarkdown(item);
+					currentTabObject.contentStatus = UNSAVED;
+					currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
+				});
+			} else {
+				return;
+			}
+		}
+	} 
 }

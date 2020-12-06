@@ -12,7 +12,7 @@ const _ = require('lodash');
 // CLASS ::: Used by Checker class instance
 // Saves values needed for dependencies checking.
 class NodeObject {
-	constructor(value, content) {
+	constructor(value, content, rootPath) {
 		this.value = value;
 		this.level = 0;
 		this.status = NOTCHECKED;
@@ -21,6 +21,9 @@ class NodeObject {
 		this.childrenSet = new Set();
 		if( content["reference"] !== null ) {
 			content["reference"].forEach((item) => {
+				if (!path.isAbsolute(item)) {
+					item = path.join(rootPath, item);
+				}
 				this.childrenSet.add(item);
 			});
 		}
@@ -59,14 +62,14 @@ module.exports = {
 		// if not newly created and has multiple children, then set current node's
 		// level to highest child's level + 1
 		// METHOD ::: Add node to nodesMap
-		addNode(value, content) {
+		addNode(value, content, rootPath) {
 			// Add node if doesn't already exist
 			let targetNode;
 			let createNew = false;
 
 			// If node doesn't exists
 			if(this.getNode(value) === null) {
-				targetNode = new NodeObject(value, content);
+				targetNode = new NodeObject(value, content, rootPath);
 				this.nodes.set(targetNode.value, targetNode);
 				createNew = true;
 			} else {
@@ -86,16 +89,18 @@ module.exports = {
 			if (targetNode.childrenSet.size !== 0) {
 				var childrenCache = new Array();
 				// Find if children is preexisting or not
-				targetNode.childrenSet.forEach((item) => {
-					// Child node exists
+				for(let i = 0; i < targetNode.childrenSet.size; i++) {
+					let item = Array.from(targetNode.childrenSet)[i];
+
 					var childNode = this.getNode(item);
+					// Child node exists
 					if(childNode !== null) {
 						childNode.addParent(targetNode.value);
 						existingChildren.push(childNode);
 					}
 					// child node doesn't exist
 					else {
-						childNode = new NodeObject(item, gdml.newGdml());
+						childNode = new NodeObject(item, gdml.newGdml(), rootPath);
 						childNode.addParent(targetNode.value);
 						nonExistingChildren.push(childNode);
 						this.nodes.set(childNode.value, childNode);
@@ -103,7 +108,7 @@ module.exports = {
 					// Push childrenNode to cache  and add child to childrenSet of targetNode
 					childrenCache.push(childNode);
 					targetNode.addChild(childNode.value);
-				});
+				}
 
 				// set parent node's level first and set unreferences child's level
 				if (existingChildren.length !== 0 && nonExistingChildren.length !== 0) {
@@ -185,11 +190,7 @@ module.exports = {
 		// FUNCTION ::: Check dependencies and return status list(array) according to dependencies' timestamps and status
 		checkDependencies() {
 			let values = this.getLevelSortedList();
-			//console.log("VAlue is ");
-			//console.log(JSON.parse(JSON.stringify(values)));
 			values.forEach((item) => {
-				//console.log("Checking file ->");
-				//console.log(item);
 				// if no children then set UPTODATE
 				if (item.childrenSet.size === 0) {
 					item.status = UPTODATE;
@@ -203,13 +204,8 @@ module.exports = {
 					if (isOutdated) item.status = OUTDATED;
 					else item.status = UPTODATE;
 				}
-
-				//console.log("after check");
-				//console.log(item);
 			});
 
-			//console.log("List after checking");
-			//console.log(values);
 			return values;
 		}
 
@@ -229,8 +225,6 @@ module.exports = {
 				return 0;
 			});
 
-			//console.log("After");
-			//console.log(values);
 
 			return values;
 		}

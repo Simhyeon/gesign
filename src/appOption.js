@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require("path");
 const yaml = require('js-yaml');
 const cli = require('./cli');
-const {Config} = require('./config');
+const config = require('./config');
 const gdml = require("./gdml");
 const {Checker} = require("./checker");
 
@@ -100,7 +100,6 @@ Options:
 
 		// FUNCTION ::: Create new config file in cwd or given directory.
 		initConfig(dirName = null) {
-			let config = new Config();
 			let fileName = "gesign_config.json";
 			if (dirName !== null && !path.isAbsolute(dirName)) 
 				fileName = path.join(dirName, fileName);
@@ -161,20 +160,18 @@ Options:
 				directory = path.join(process.cwd(), directory);
 			}
 
-			let config = new Config();
-			config.readFromFile(path.join(directory, "gesign_config.json"));
-
+			config.init(path.join(directory, "gesign_config.json"));
 
 			this.rootDirectory = directory;
 
 			let files = fs.readdirSync(directory);
 			let gdmlList = new Array();
 
-			this.listGdml(gdmlList, config, directory, files);
+			this.listGdml(gdmlList, directory, files);
 
 			let checker = new Checker();
 			gdmlList.forEach((item) => {
-				checker.addNode(item.path, item.content);
+				checker.addNode(item.path, item.content, directory);
 			})
 			let checkerList = checker.checkDependencies();
 
@@ -211,22 +208,22 @@ Options:
 			return new ProcessStatus(true,0);
 		}
 
-		listGdml(gdmlList, config, root, files) {
+		listGdml(gdmlList, root, files) {
 			// Directory is shown first and files are shown later.
 			let dirsArray = files.filter(file => fs.lstatSync(path.join(root, file)).isDirectory());
 			let filesArray = files.filter(file => !fs.lstatSync(path.join(root, file)).isDirectory());
 
 			dirsArray.forEach((file) => {
-				if (config.getExclusionRules().find(rule => path.join(this.rootDirectory, rule) === path.join(root, file)) !== undefined) {
+				if (config.exclusionRules().find(rule => path.join(this.rootDirectory, rule) === path.join(root, file)) !== undefined) {
 					console.log("Found exclusion rule ignoring file : " + file);
 					return;
 				}
 
-				this.listDirectory(gdmlList, config, root, path.basename(file));
+				this.listDirectory(gdmlList, root, path.basename(file));
 			})
 
 			filesArray.forEach((file) => {
-				if (config.getExclusionRules().find(rule => path.join(this.rootDirectory, rule) === path.join(root, file)) !== undefined) {
+				if (config.exclusionRules().find(rule => path.join(this.rootDirectory, rule) === path.join(root, file)) !== undefined) {
 					console.log("Found exclusion rule ignoring file : " + file);
 					return;
 				}
@@ -245,13 +242,13 @@ Options:
 		}
 
 		// FUNCTION ::: Read files from given directory so that listFile function can add gdml file to gdmlList varaible.
-		listDirectory(gdmlList, config,root, dirName) {
+		listDirectory(gdmlList,root, dirName) {
 			let fullPath = path.join(root, dirName);
 			fs.readdir(fullPath, (err, files) => {
 				if(err) {
 					console.log("Failed to read recursive files in directory");
 				} else {
-					this.listGdml(gdmlList,config, fullPath, files);
+					this.listGdml(gdmlList, fullPath, files);
 				}
 			});
 		}
