@@ -34,7 +34,8 @@ module.exports = {
 			startMode: "wysiwyg",
 			fontSize: "small",
 			templatePath: "templates",
-			checkOnSave : false
+			checkOnSave : false,
+			unpinAuto : true
 		}
 	}
 }

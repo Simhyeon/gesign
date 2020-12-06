@@ -9,6 +9,7 @@ const addPathBtn = document.querySelector("#addTemplatePath");
 
 const templatePathElem= document.querySelector("#templatePath");
 const exclusionRoot = document.querySelector("#exclusionList");
+const unpinAuto = document.querySelector("#unpinAuto");
 //const checkOnSave = document.querySelector("");
 
 const config = remote.getGlobal('shared').config.content;
@@ -60,6 +61,7 @@ saveBtn.addEventListener('click', () => {
 		document.querySelector('input[name="startMode"]:checked').value;
 	remote.getGlobal('shared').config.content.fontSize = 
 		document.querySelector('input[name="fontSize"]:checked').value;
+	remote.getGlobal('shared').config.content.unpinAuto = unpinAuto.checked;
 
 	remote.getCurrentWindow().close();
 });
@@ -107,10 +109,13 @@ function init() {
 	// Template path
 	templatePathElem.innerHTML = config.templatePath;
 	
-	// TODO ::: Exclusion rules
+	// Exclusion rules
 	config.exclusion.forEach(item => {
 		addExclusionRule(item);
 	});
+
+	// Unpin Auto
+	unpinAuto.checked = config.unpinAuto;
 }
 
 function addExclusionRule(path = "") {

@@ -125,10 +125,17 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 
 	if (shared.rootDirectory == null) return;
 
-	// Hide Button
-	if (tabObjects.length !== 0) {
-		hideCurrentTab();
-	}
+	let tabCache = -1;
+	if(currentTabIndex !== -1) {
+		// HIde when tab is either temporary
+		if (tabObjects[currentTabIndex].temp ) {
+			// Or tab is loaded from refernce button
+			// If the latter than set instance as non temporary.
+			tabCache = currentTabIndex;
+		} else {
+			hideCurrentTab();
+		}
+	} // else if tab is not opened at all don't have to hide anything.
 
 	let metaElem = metaBar.cloneNode(true);
 	let editorScreenElem = editorScreen.cloneNode(true);
@@ -191,6 +198,12 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	metaElem.addEventListener('drop', (event) => {
 		addRefBtn(event.dataTransfer.getData("text"), false);
 	});
+
+	// If tabcache has been saved
+	if (tabCache !== -1) {
+		closeTab(tabObjects[tabCache].path);
+		console.log(JSON.parse(JSON.stringify(tabObjects.length)));
+	}
 });
 
 // EVENT ::: Make Checker object and add all gdml documents as NodeInstance to checkerinstance
@@ -811,8 +824,16 @@ function loadGdmlToEditor(event) {
 	// Hide currently visible tab or delte if tab is temporary.
 	let tabCache = -1;
 	if(currentTabIndex !== -1) {
-		if (tabObjects[currentTabIndex].temp) {
-			tabCache = currentTabIndex;
+		// HIde when tab is either temporary
+		if (tabObjects[currentTabIndex].temp ) {
+			// Or tab is loaded from refernce button
+			// If the latter than set instance as non temporary.
+			if (event.currentTarget.classList.contains("refBtn")) {
+				hideCurrentTab();
+				tabObjects[currentTabIndex].temp = false;
+			} else {
+				tabCache = currentTabIndex;
+			}
 		} else {
 			hideCurrentTab();
 		}
@@ -842,15 +863,16 @@ function loadGdmlToEditor(event) {
 		currentTabIndex = tabObjects.length;
 		let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem);
 
-		var tabObject = newTabObject(true, SAVED, SAVED, false, filePath, new Set() , yaml.safeLoad(data, 'utf8'), metaElem, editorScreenElem, null, editorInstance);
+		var tabObject = newTabObject(config.content.unpinAuto , SAVED, SAVED, false, filePath, new Set() , yaml.safeLoad(data, 'utf8'), metaElem, editorScreenElem, null, editorInstance);
 
 		// LEGACY ::: tabObject before newTabObject method should be here for reference
 		//var tabObject = {contentStatus: SAVED, refStatus: SAVED, manualSave: false, path: filePath, ref: new Set() ,content: yaml.safeLoad(data, 'utf8'), meta: metaElem, screen: editorScreenElem, tab: null, editor: editorInstance};
 		
 		tabObjects.push(tabObject);
-		editorInstance.setMarkdown(tabObject.content["body"], false);
+		editorInstance.setMarkdown(tabObject.content["body"].trim(), false);
 		editorInstance.changeMode(config.content["startMode"]);
 
+		// ANONYMOUSE FUNCTION
 		// If editor's content changes and content is different from original one
 		// then set status to unsaved.
 		// Also change tab's name to somewhat distinguishable.
@@ -1263,7 +1285,7 @@ function addRefBtn(fileName, listing) {
 	elem.textContent = path.basename(filePath);
 	elem.dataset.path = filePath;
 	elem.addEventListener('click', loadGdmlToEditor);
-	elem.classList.add("font-bold");
+	elem.classList.add("font-bold", "refBtn");
 
 	// TODO :: Make close button
 	let closeButton = document.createElement('button');
