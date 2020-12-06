@@ -31259,13 +31259,19 @@ div#references::-webkit-scrollbar {
 }
 
 .uptodate ~ i {
-  --tw-text-opacity: 1;
-  color: rgba(59, 130, 246, var(--tw-text-opacity));
+  display: none;
 }
 
 .outdated ~ i {
-  --tw-text-opacity: 1;
-  color: rgba(239, 68, 68, var(--tw-text-opacity));
+  display: inline-block;
+}
+
+.outdatedRed {
+  color: #e0115f;
+}
+
+.uptodateBlue {
+  color: #4545cc;
 }
 
 @media (min-width: 640px) {

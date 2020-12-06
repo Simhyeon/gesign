@@ -58,6 +58,7 @@ module.exports = {
 		showHelpText() {
 			let helpText = `Usage: gesign [options] [arguments]
 Options:
+  --dev										Open dev tools. This must come as first argument.
   -h, --help                                display help text.
   -n, --new <FileName>                      Create new gdml file, default name is new.gdml
   -d, --dir <Directory>                     Open gesign with given directory as current working directory.

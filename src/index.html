@@ -16,9 +16,9 @@
 	<body>
 		<div id="helpText" style="top: 50%; left: 40%; font-size: 20px; position: fixed; z-index: 10; color: gray">Open directory to start editing gdml files</div>
 		<div id="screen" class="flex w-full h-full">
-			<div id="sideNav" class="sidenav flex flex-col bg-gray-600 border-r">
+			<div id="sideNav" class="sidenav flex flex-col bg-gray-600 border-r-2 border-gray-400 border-opacity-10">
 				<div id="appMenu" class="appmenu flex flex-col w-full">
-					<div id="testFiles" class="flex border-b">
+					<div id="fileOps" class="flex border-b-2 border-gray-400 border-opacity-10">
 						<button id="saveFileBtn" class="py-1 px-2 mx-2 tooltip hover:opacity-50"><span class="tooltiptext">Save File</span><i class="far fa-save text-gray-300"></i></button>
 						<button id="openDirBtn" class="py-1 px-2 mx-2 tooltip hover:opacity-50"><span class="tooltiptext">Open root directory</span><i class="far fa-folder-open text-gray-300"></i></button>
 						<button id="checker" class="py-1 px-2 mx-2 tooltip hover:opacity-50"><span class="tooltiptext">Check depdencies</span><i class="far fa-check-square text-gray-300"></i></button>
@@ -40,7 +40,7 @@
 				</div>
 				<div id="metaBar" class="flex border-b bg-gray-100 w-full" style="height: 3%; min-height: 30px">
 					<div class="item-center justify-start flex w-full">
-						<div id="statusBar" style="width: 128px"class="h-full mx-2 bg-white text-gray-800 font-semibold py-1 px-2 border border-gray-700 rounded shadow text-center inline-block w-auto align-middle">Status</div>
+						<div id="statusBar" style="width: 128px"class="h-full mx-2 font-semibold py-1 px-2 text-center inline-block w-auto align-middle border-r-2 border-gray-400">Status</div>
 						<div id="references" class="references overflow-x-auto item-center justify-start flex w-full">
 						</div>
 					</div>

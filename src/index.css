@@ -73,9 +73,17 @@ div#references::-webkit-scrollbar {
 }
 
 .uptodate ~ i {
-	@apply text-blue-500;
+	display: none;
 }
 
 .outdated ~ i {
-	@apply text-red-500;
+	display: inline-block;
+}
+
+.outdatedRed {
+	color: #e0115f;
+}
+
+.uptodateBlue {
+	color: #4545cc;
 }
