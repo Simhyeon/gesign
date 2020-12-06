@@ -1035,6 +1035,7 @@ function addNewTab(filePath) {
 // Deletion is determined with path not index.
 function closeTab(path) {
 	let targetTabObject = tabObjects.find(object => object.tab.dataset.path === path);
+	let targetDataIndex = Number(targetTabObject.tab.dataset.index);
 	let index = tabObjects.indexOf(targetTabObject);
 
 	if (targetTabObject.refStatus !== SAVED || targetTabObject.contentStatus !== SAVED) {
@@ -1068,12 +1069,7 @@ function closeTab(path) {
 			tabObjects[currentTabIndex].meta.style.display = "";
 			tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
 			tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
-
-			console.log(currentTabIndex);
-			console.log(index);
-			console.log(tabObjects);
-			console.log(tabObjects[index]);
-			statusGraphics(tabObjects[index].content["status"]);
+			statusGraphics(tabObjects[currentTabIndex].content["status"]);
 		}
 		// if Index is lower than currentTabIndex
 		// Decrease by 1 because currentTabIndex is logically changed by deletion.
@@ -1081,11 +1077,12 @@ function closeTab(path) {
 			currentTabIndex -= 1;
 		}
 
-		// Decrease all tab's index by 1 which index data is bigger than 'index'
-		// let i is index not index + 1 becuase 'index' is former target value to close
-		// In here targetObject is already destroyed so index points to after object.
-		for (let i = index; i < tabObjects.length; i++) {
-			tabObjects[i].tab.dataset.index = Number(tabObjects[i].tab.dataset.index) - 1;
+		// Decrease all tab's index by 1 which index data is bigger than 'targetDataIndex'
+		for (let i = 0; i < tabObjects.length; i++) {
+			if (Number(tabObjects[i].tab.dataset.index) > targetDataIndex) {
+				tabObjects[i].tab.dataset.index = Number(tabObjects[i].tab.dataset.index) - 1;
+			}
+			//tabObjects[i].tab.dataset.index = Number(tabObjects[i].tab.dataset.index) - 1;
 		}
 	} 
 	//if tabObjects' length i 0 then rest currentTabIndex (which is setting to -1)
