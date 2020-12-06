@@ -35,7 +35,7 @@ module.exports = {
 			fontSize: "small",
 			templatePath: "templates",
 			checkOnSave : false,
-			unpinAuto : true
+			unpinAuto : false
 		}
 	}
 }
