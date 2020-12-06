@@ -420,7 +420,7 @@ function setRootDirectory(directory) {
 	let doFoldDirectory = true;
 	let files;
 
-	//try {
+	try {
 		files = fs.readdirSync(directory);
 		// Set directory's config file to current directory's config if exists.
 		config.init(path.join(directory, "gesign_config.json"));
@@ -442,6 +442,33 @@ function setRootDirectory(directory) {
 		sideMenu.appendChild(divElem);
 		divElem.appendChild(dirElem);
 
+		// DEBUG ::: 
+		//divElem.draggable = true;
+		//divElem.addEventListener('dragover', (event) => {
+			//event.preventDefault();
+		//}, false);
+	
+		//divElem.addEventListener('dragstart', (event) => {
+			//event.dataTransfer.setData('text/plain', null);
+			////dragged = event.target;
+		//}, false);
+	
+		//divElem.addEventListener('drop', (event) => {
+			//// TODO ::: Check where the mouse position is 
+			//// Change the order according to the mouse position.
+			//// Use dragged object to change order. use insertbefore either insertafter
+			////
+			//let rect = event.currentTarget.getBoundingClientRect();
+			//let x = event.clientX - rect.left; //x position within the element.
+	
+			//if (rect.width / 2 >= x) {
+				////insertbefore
+			//} else if (rect.width / 2 < x) {
+				////insertafter
+			//}
+	
+		//}, false);
+
 		// Set variable that decided whether fold or not.
 		doFoldDirectory = (shared.rootDirectory === null || shared.rootDirectory !== directory);
 
@@ -456,9 +483,9 @@ function setRootDirectory(directory) {
 			watcher = new Array();
 		}
 
-	//} catch(error) {
-		//return console.error('Unable to scan directory: ' + error);
-	//}
+	} catch(error) {
+		return console.error('Unable to scan directory: ' + error);
+	}
 
 	// Disable Help text on startup
 	document.querySelector("#helpText").style.display = "none";
