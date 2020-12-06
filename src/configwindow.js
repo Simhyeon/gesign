@@ -35,7 +35,6 @@ module.exports = {
 				slashes: true
 			}));
 
-			this.win.webContents.openDevTools();
 			this.win.on('closed', () => {
 				this.win = null;
 
