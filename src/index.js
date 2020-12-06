@@ -251,6 +251,8 @@ function checkerButton() {
 		return 0;
 	});
 
+	console.log(totalGdmlList.length === checkerList.length);
+
 	// TODO ::: Should change statuses of menu buttons 
 	// In first sight it should be ok becuase fs filewatch will detect status change and will
 	// read from root Directory.
@@ -259,10 +261,17 @@ function checkerButton() {
 		// If Status has changed after dependency check, apply changes to file
 		// With this approcah caching(memory usage) is minified and I/O is maximized.
 		if (totalGdmlList[j].status !== checkerList[j].status) {
+			//console.log("UPdating : " + totalGdmlList[j].path);
 			let readFile = yaml.load(fs.readFileSync(totalGdmlList[j].path), 'utf8');
 			readFile["status"] = checkerList[j].status;
 			fs.writeFileSync(totalGdmlList[j].path, yaml.safeDump(readFile), 'utf8');
 			shouldReload = true;
+
+			if (currentTabIndex !== -1 && 
+				totalGdmlList[j].path === tabObjects[currentTabIndex].path) {
+				//console.log("Should update current statusGraphic");
+				statusGraphics(checkerList[j].status);
+			}
 		}
 	}
 }
@@ -278,7 +287,7 @@ function saveFile() {
 	if (tabObjects.length === 0) return;
 	// Get currentTabObject for easy reading
 	let currentTabObject = tabObjects[currentTabIndex];
-	console.log(currentTabObject);
+	//console.log(currentTabObject);
 	if(currentTabObject.contentStatus !== UNSAVED && currentTabObject.refStatus !== UNSAVED) return; // if file is not unsaved then skip operation
 
 	// Update content body with editor's content
@@ -402,7 +411,6 @@ function setRootDirectory(directory) {
 		files = fs.readdirSync(directory);
 		// Set directory's config file to current directory's config if exists.
 		config.init(path.join(directory, "gesign_config.json"));
-		console.log("TESTING");
 		// DEUBG ::: config.readFromFile(path.join(directory, "gesign_config.json"));
 		// Change font size according to font size
 		setFontSize();
@@ -482,15 +490,15 @@ function setRootDirectory(directory) {
 						tabObject.manualSave = true;
 						tabObject.tab.textContent = path.basename(tabObject.path) + UNSAVEDSYMBOL;
 					} 
-					// If editor content is not "unsaved"
+					// If editor content is saved or not "unsaved"
 					// just copy file contents to editor
 					else {
+						tabObject.content = readContent;
 						// TODO ::: THIS might be bloat, however this app is bloat anyway.
 						// Reason why checking equality before setting, although it looks redundant
 						// is that pasting makes cursor to move to start area which is not an ideal
 						// experience for end users.
 						if (tabObject.editor.getMarkdown().trim() !== readContent["body"].trim()) {
-							tabObject.content = readContent;
 							tabObject.editor.setMarkdown(readContent["body"], false);
 						}
 
@@ -519,8 +527,8 @@ function setRootDirectory(directory) {
 	// Such process can be optimized by ignoring folding check when root directory has changed.
 	prevFileTree = fileTree;
 	fileTree = new FileTree(shared.rootDirectory);
-	console.log(prevFileTree);
-	console.log(fileTree);
+	//console.log(prevFileTree);
+	//console.log(fileTree);
 	//console.log(JSON.parse(JSON.stringify(prevFileTree)));
 	//console.log(JSON.parse(JSON.stringify(fileTree)));
 
@@ -545,11 +553,11 @@ function watchFileChange(directory, evt, name) {
 			if (prevFileTree !== null) {
 				// Result is either null or node.
 				// Null means given name(path) doesn't match given root directory.
-				console.log("Currently trying to check if file is in FileTree");
-				console.log("Changed file name is :");
-				console.log(JSON.parse(JSON.stringify(name)));
-				console.log("Previous FileTree content");
-				console.log(JSON.parse(JSON.stringify(prevFileTree)));
+				//console.log("Currently trying to check if file is in FileTree");
+				//console.log("Changed file name is :");
+				//console.log(JSON.parse(JSON.stringify(name)));
+				//console.log("Previous FileTree content");
+				//console.log(JSON.parse(JSON.stringify(prevFileTree)));
 				let result = prevFileTree.getNode(name);
 				if (result === undefined) {
 					alert("Failed to resolve file hierarchy. Please reload directory.");
@@ -568,6 +576,8 @@ function watchFileChange(directory, evt, name) {
 			if (shouldReload) shouldReload = false;
 			// if file or directory has changed then reload root directory.
 			setRootDirectory(shared.rootDirectory);
+		} else if (name === path.join(shared.rootDirectory, config.CONFIGFILENAME)) {
+			config.init(name);
 		}
 	} 
 }
@@ -784,6 +794,8 @@ function loadGdmlToEditor(event) {
 		tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
 		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
 		// Update Status Bar
+		console.log("Loading exsiting tab");
+		console.log(tabObjects[currentTabIndex].content["status"]);
 		statusGraphics(tabObjects[currentTabIndex].content["status"]);
 
 		// If prior tab was temporary delete tab
