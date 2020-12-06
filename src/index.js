@@ -20,6 +20,9 @@ const template = require('./template')
 const CliOption = cli.CliOption;
 const {ConfigWindow} = require('./configwindow');
 
+// VARIABLE ::: variable reserved for dragging
+let dragged = null;
+
 /// VARIABLE ::: Manual reload flag
 let shouldReload = false;
 
@@ -54,10 +57,13 @@ const NEWFILENAME = "new*.gdml";
 
 // VARAIBLE ::: COLOR value is based on tailwind-css class names
 const UNDEFINEDCOLOR = "bg-gray-600";
-const HIGHLIGHT = "border-b-2"; 
-const NORMALBG = "opacity-50";
+const TEMPORARY = new Array("border-dashed");
+const HIGHLIGHT = new Array("border-b-2", "hover:opacity-80"); 
+const NORMALBG = new Array("opacity-50", "hover:opacity-100");
 const OUTDATEDCOLOR = "bg-red-500";
 const UPTODATECOLOR = "bg-blue-500";
+const OUTDATEDTEXTCOLOR = "outdatedRed";
+const UPTODATETEXTCOLOR = "uptodateBlue";
 // BREAKABLE ::: This is really hard code and may breakble in later releases of toast ui editor.
 const FONTCLASSES= ".CodeMirror-lines, .tui-editor-contents";
 
@@ -117,6 +123,7 @@ let argIndex = cli.getFlagArgIndex(dirOption);
 if (argIndex !== null) {
 	dirOption.actionArg = remote.process.argv[argIndex];
 }
+
 // Execute render window related cli options' corresponding functions(closure).
 cli.execFlagAction(dirOption);
 
@@ -186,8 +193,8 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	tabObject.tab = newTab;
 
 	// Set highlight color
-	tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
-	tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
+	tabObjects[currentTabIndex].tab.parentElement.classList.add(...HIGHLIGHT);
+	tabObjects[currentTabIndex].tab.parentElement.classList.remove(...NORMALBG);
 
 	// set status graphic
 	statusGraphics(tabObjects[currentTabIndex].content["status"]);
@@ -420,7 +427,7 @@ function setRootDirectory(directory) {
 	let doFoldDirectory = true;
 	let files;
 
-	//try {
+	try {
 		files = fs.readdirSync(directory);
 		// Set directory's config file to current directory's config if exists.
 		config.init(path.join(directory, "gesign_config.json"));
@@ -442,6 +449,7 @@ function setRootDirectory(directory) {
 		sideMenu.appendChild(divElem);
 		divElem.appendChild(dirElem);
 
+
 		// Set variable that decided whether fold or not.
 		doFoldDirectory = (shared.rootDirectory === null || shared.rootDirectory !== directory);
 
@@ -456,9 +464,9 @@ function setRootDirectory(directory) {
 			watcher = new Array();
 		}
 
-	//} catch(error) {
-		//return console.error('Unable to scan directory: ' + error);
-	//}
+	} catch(error) {
+		return console.error('Unable to scan directory: ' + error);
+	}
 
 	// Disable Help text on startup
 	document.querySelector("#helpText").style.display = "none";
@@ -685,9 +693,11 @@ function listFile(root, fileName, parentElement) {
 
 	// If filename is too long then cut it
 	fileName = path.basename(fileName, '.gdml')
-	if (fileName.length > 13) {
-		fileName = fileName.slice(0, 13) + "...";
+
+	if (fileName.length > 15) {
+		fileName = fileName.slice(0, 15) + "...";
 	}
+
 	elem.textContent = fileName;
 	elem.dataset.path = fullPath;
 	elem.dataset.index = -1;
@@ -702,7 +712,7 @@ function listFile(root, fileName, parentElement) {
 	//elem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "mb-1", "w-full");
 	divElem.classList.add("flex", "items-center");
 	elem.classList.add("font-bold", "text-left", "py-2", "pl-4", "text-gray-200", "fileButton", "mb-1", "w-full", "inline", "hover:opacity-50", buttonStatus);
-	indElem.classList.add("fas", "fa-circle", "mr-1", "text-xs");
+	indElem.classList.add("fas", "fa-exclamation-triangle", "text-gray-300", "mr-2");
 
 	elem.draggable = true;
 	parentElement.appendChild(divElem);
@@ -792,7 +802,7 @@ function loadGdmlToEditor(event) {
 	if (tabIndex === -1) 
 		tabIndex = isTabPresent(event.currentTarget.dataset.path);
 
-	console.log(tabIndex);
+	//console.log(tabIndex);
 	// If file is already open thus tab exists
 	if(tabIndex !== -1 && !isNaN(tabIndex)){
 		// Hide CurrentTab
@@ -804,8 +814,8 @@ function loadGdmlToEditor(event) {
 		// And show selected tab
 		tabObjects[currentTabIndex].screen.style.display = "";
 		tabObjects[currentTabIndex].meta.style.display = "";
-		tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
-		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
+		tabObjects[currentTabIndex].tab.parentElement.classList.add(...HIGHLIGHT);
+		tabObjects[currentTabIndex].tab.parentElement.classList.remove(...NORMALBG);
 		// Update Status Bar
 		console.log("Loading exsiting tab");
 		console.log(tabObjects[currentTabIndex].content["status"]);
@@ -831,6 +841,7 @@ function loadGdmlToEditor(event) {
 			if (event.currentTarget.classList.contains("refBtn")) {
 				hideCurrentTab();
 				tabObjects[currentTabIndex].temp = false;
+				tabObjects[currentTabIndex].tab.parentElement.classList.remove(...TEMPORARY);
 			} else {
 				tabCache = currentTabIndex;
 			}
@@ -881,7 +892,10 @@ function loadGdmlToEditor(event) {
 			if (currentTab.content["body"] !== currentTab.editor.getMarkdown().trim()) {
 				currentTab.contentStatus = UNSAVED;
 				currentTab.tab.textContent = path.basename(currentTab.path) + UNSAVEDSYMBOL;
-				if (currentTab.temp) currentTab.temp = false;
+				if (currentTab.temp) {
+					currentTab.temp = false;
+					currentTab.tab.parentElement.classList.remove(...TEMPORARY);
+				}
 			} else { // both contents are same
 				currentTab.contentStatus = SAVED;
 				if (currentTab.refStatus === SAVED) {
@@ -895,9 +909,11 @@ function loadGdmlToEditor(event) {
 		let newTab = addNewTab(filePath);
 		tabObject.tab = newTab;
 
+		if (tabObject.temp) newTab.parentElement.classList.add(...TEMPORARY);
+
 		// Set highlight color
-		tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
-		tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
+		tabObjects[currentTabIndex].tab.parentElement.classList.add(...HIGHLIGHT);
+		tabObjects[currentTabIndex].tab.parentElement.classList.remove(...NORMALBG);
 
 		// set status graphic
 		statusGraphics(tabObjects[currentTabIndex].content["status"]);
@@ -916,7 +932,7 @@ function loadGdmlToEditor(event) {
 		// If tabcache has been saved
 		if (tabCache !== -1) {
 			closeTab(tabObjects[tabCache].path);
-			console.log(JSON.parse(JSON.stringify(tabObjects.length)));
+			//console.log(JSON.parse(JSON.stringify(tabObjects.length)));
 		}
 	});
 }
@@ -926,6 +942,7 @@ function pinTab(event) {
 	let tabIndex = Number(event.currentTarget.dataset.index);
 
 	tabObjects[tabIndex].temp = false;
+	tabObjects[tabIndex].tab.parentElement.classList.remove(...TEMPORARY);
 }
 
 // FUNCTION ::: Check if tab is present in tabArray, namely tabObjects (plural)
@@ -944,13 +961,54 @@ function addNewTab(filePath) {
 	let btnElem = document.createElement('button');
 
 	//divElem.classList.add("blankButton", "bg-white");
-	divElem.classList.add( "text-gray-200", "font-bold", "py-1", "px-2", UNDEFINEDCOLOR, "hover:opacity-50");
+	divElem.classList.add( "text-gray-200", "font-bold", "py-1", "px-2", UNDEFINEDCOLOR, "tabParent");
+	// DEBUG ::: 
+	divElem.draggable = true;
+	divElem.addEventListener('dragover', (event) => {
+		event.preventDefault();
+	}, false);
+
+	divElem.addEventListener('dragstart', (event) => {
+		event.dataTransfer.setData('text/plain', null);
+		dragged = event.currentTarget;
+	}, false);
+
+	divElem.addEventListener('drop', (event) => {
+		if (!dragged.classList.contains("tabParent") || dragged === null) {
+			dragged = null;
+			return;
+		}
+		// TODO ::: Check where the mouse position is 
+		// Change the order according to the mouse position.
+		// Use dragged object to change order. use insertbefore either insertafter
+		//
+		let rect = event.currentTarget.getBoundingClientRect();
+		let x = event.clientX - rect.left; //x position within the element.
+		console.log(x);
+		if (rect.width / 2 >= x) {
+			console.log("Insert before");
+			//insertbefore
+			//
+			// Get siblings of dragged and increase index by 1
+			// remove dragged from parent and add before target.
+			event.currentTarget.parentElement.insertBefore(dragged, event.currentTarget);
+		} else if (rect.width / 2 < x) {
+			console.log("Insert After");
+			//insertafter
+			//
+			// Get siblings of dragged and increase index by 1
+			// remove dragged from parent and add before target.
+			event.currentTarget.parentElement.insertBefore(dragged, event.currentTarget.nextSibling);
+		}
+
+	}, false);
 
 	btnElem.dataset.path = filePath;
 	btnElem.dataset.index = tabObjects.length - 1;
 	btnElem.textContent = path.basename(filePath);
 	btnElem.addEventListener('click', loadGdmlToEditor);
 	btnElem.addEventListener('dblclick', pinTab);
+	btnElem.classList.add("tabBtn", "font-semibold");
 
 	// TODO :: Make close button
 	let closeButton = document.createElement('button');
@@ -976,6 +1034,7 @@ function addNewTab(filePath) {
 // Deletion is determined with path not index.
 function closeTab(path) {
 	let targetTabObject = tabObjects.find(object => object.tab.dataset.path === path);
+	let targetDataIndex = Number(targetTabObject.tab.dataset.index);
 	let index = tabObjects.indexOf(targetTabObject);
 
 	if (targetTabObject.refStatus !== SAVED || targetTabObject.contentStatus !== SAVED) {
@@ -996,7 +1055,7 @@ function closeTab(path) {
 		// if Index is bigger than currentTabIndex; Do nothing 
 		//
 		// if Index is same with currentTabIndex;
-		if (index == currentTabIndex) {
+		if (index === currentTabIndex) {
 			// if index is bigger than 0 decrease by 1
 			// else if index === 0 then, don't need to change index.
 			// Other remaining element should be in 0 index
@@ -1007,10 +1066,9 @@ function closeTab(path) {
 			// Show remaining tab
 			tabObjects[currentTabIndex].screen.style.display = "";
 			tabObjects[currentTabIndex].meta.style.display = "";
-			tabObjects[currentTabIndex].tab.parentElement.classList.add(HIGHLIGHT);
-			tabObjects[currentTabIndex].tab.parentElement.classList.remove(NORMALBG);
-
-			statusGraphics(tabObjects[index].content["status"]);
+			tabObjects[currentTabIndex].tab.parentElement.classList.add(...HIGHLIGHT);
+			tabObjects[currentTabIndex].tab.parentElement.classList.remove(...NORMALBG);
+			statusGraphics(tabObjects[currentTabIndex].content["status"]);
 		}
 		// if Index is lower than currentTabIndex
 		// Decrease by 1 because currentTabIndex is logically changed by deletion.
@@ -1018,11 +1076,12 @@ function closeTab(path) {
 			currentTabIndex -= 1;
 		}
 
-		// Decrease all tab's index by 1 which index data is bigger than 'index'
-		// let i is index not index + 1 becuase 'index' is former target value to close
-		// In here targetObject is already destroyed so index points to after object.
-		for (let i = index; i < tabObjects.length; i++) {
-			tabObjects[i].tab.dataset.index = Number(tabObjects[i].tab.dataset.index) - 1;
+		// Decrease all tab's index by 1 which index data is bigger than 'targetDataIndex'
+		for (let i = 0; i < tabObjects.length; i++) {
+			if (Number(tabObjects[i].tab.dataset.index) > targetDataIndex) {
+				tabObjects[i].tab.dataset.index = Number(tabObjects[i].tab.dataset.index) - 1;
+			}
+			//tabObjects[i].tab.dataset.index = Number(tabObjects[i].tab.dataset.index) - 1;
 		}
 	} 
 	//if tabObjects' length i 0 then rest currentTabIndex (which is setting to -1)
@@ -1206,18 +1265,18 @@ function statusGraphics(statusString) {
 	if( statusString === "UPTODATE" ) {
 		statusDiv.textContent = "Up to date";
 		statusDiv.classList.remove(UNDEFINEDCOLOR);
-		statusDiv.classList.remove(OUTDATEDCOLOR);
-		statusDiv.classList.add(UPTODATECOLOR);
+		statusDiv.classList.remove(OUTDATEDTEXTCOLOR);
+		statusDiv.classList.add(UPTODATETEXTCOLOR);
 	} else if (statusString === "OUTDATED") {
 		statusDiv.textContent = "Outdated";
 		statusDiv.classList.remove(UNDEFINEDCOLOR);
-		statusDiv.classList.add(OUTDATEDCOLOR);
-		statusDiv.classList.remove(UPTODATECOLOR);
+		statusDiv.classList.add(OUTDATEDTEXTCOLOR);
+		statusDiv.classList.remove(UPTODATETEXTCOLOR);
 	} else if (statusString === "INDEFINITE") {
 		statusDiv.textContent = "Indefinte";
 		statusDiv.classList.add(UNDEFINEDCOLOR);
-		statusDiv.classList.remove(OUTDATEDCOLOR);
-		statusDiv.classList.remove(UPTODATECOLOR);
+		statusDiv.classList.remove(OUTDATEDTEXTCOLOR);
+		statusDiv.classList.remove(UPTODATETEXTCOLOR);
 	}
 }
 
@@ -1278,14 +1337,14 @@ function addRefBtn(fileName, listing) {
 	}
 	
 	let menuColor = UNDEFINEDCOLOR; // Undefined color
-	if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDCOLOR;
-	else menuColor = UPTODATECOLOR;
-	divElem.classList.add("blankButton", menuColor);
+	if (fileYaml["status"] == OUTDATED) menuColor = OUTDATEDTEXTCOLOR;
+	else menuColor = UPTODATETEXTCOLOR;
+	divElem.classList.add(menuColor, "h-full", "mx-2" ,"py-1" ,"px-2" , "text-center", "inline-block" ,"w-auto", "align-middle", "hover:opacity-70");
 
 	elem.textContent = path.basename(filePath);
 	elem.dataset.path = filePath;
 	elem.addEventListener('click', loadGdmlToEditor);
-	elem.classList.add("font-bold", "refBtn");
+	elem.classList.add("font-semibold" ,"refBtn");
 
 	// TODO :: Make close button
 	let closeButton = document.createElement('button');
@@ -1340,8 +1399,8 @@ function hideCurrentTab() {
 	// Hide screen and toggle color of tab Object
 	tabObjects[currentTabIndex].screen.style.display = "none";
 	tabObjects[currentTabIndex].meta.style.display = "none";
-	tabObjects[currentTabIndex].tab.parentElement.classList.remove(HIGHLIGHT);
-	tabObjects[currentTabIndex].tab.parentElement.classList.add(NORMALBG);
+	tabObjects[currentTabIndex].tab.parentElement.classList.remove(...HIGHLIGHT);
+	tabObjects[currentTabIndex].tab.parentElement.classList.add(...NORMALBG);
 }
 
 // FUNCTION ::: Toggle between editing different modes ( wysiwyg and markdown mode ).

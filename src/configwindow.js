@@ -13,10 +13,10 @@ module.exports = {
 			remote.getGlobal('shared').config = config;
 			remote.getGlobal('shared').rootDirectory = shared.rootDirectory; 
 			this.win = new remote.BrowserWindow({
-				minWidth: 600, 
-				minHeight: 700, 
-				width : 800, 
-				height: 800, 
+				minWidth: 550, 
+				minHeight: 650, 
+				width : 550, 
+				height: 650, 
 				modal: true, 
 				parent: remote.getCurrentWindow(), 
 				webPreferences: {
@@ -25,6 +25,9 @@ module.exports = {
 
 				}
 			});
+			this.win.setMenuBarVisibility(false);
+			this.win.setAutoHideMenuBar(true);
+
 
 			this.win.loadURL(url.format({
 				pathname: path.join(__dirname, 'configwindow.html'),

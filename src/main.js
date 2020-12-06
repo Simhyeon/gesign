@@ -5,7 +5,7 @@ const {AppOption} = require('./appOption');
 const {app, BrowserWindow} = require("electron");
 
 // TESTING
-app.disableHardwareAcceleration();
+//app.disableHardwareAcceleration();
 
 // VARIABLE ::: Local window variable
 let win;
@@ -33,15 +33,21 @@ function createWindow() {
 		enableRemoteModule: true,
 		nativeWindowOpen: true
 	}});
-
+	win.setMenuBarVisibility(false);
+	win.setAutoHideMenuBar(true);
 	win.loadURL(url.format({
 		pathname: path.join(__dirname, 'index.html'),
 		protocol: "file",
 		slashes: true
 	}));
 
-	// Dev dev console window.
-	win.webContents.openDevTools();
+	// If player gave dev flat as first argument
+	if (args[1] === "--dev") {
+		// Dev console window.
+		win.webContents.openDevTools();
+	}
+
+
 	win.on('closed', () => {
 		win = null;
 	})
