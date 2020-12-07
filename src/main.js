@@ -22,7 +22,7 @@ if (processStatus !== null && processStatus.doExit) {
 
 // ELECTRON Initiation
 function createWindow() {
-	// Config reserved for ipc communication
+	// Config global variable reserved for ipc communication
 	global.shared = {
 		rootDirectory: null,
 		config: null
@@ -48,7 +48,8 @@ function createWindow() {
 		slashes: true
 	}));
 
-	// If player gave dev flat as first argument
+	// If player gave dev flag as first argument
+	// open dev tools on startup
 	if (args[1] === "--dev") {
 		// Dev console window.
 		win.webContents.openDevTools();

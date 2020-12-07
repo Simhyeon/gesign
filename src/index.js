@@ -26,14 +26,13 @@ let dragged = null;
 /// VARIABLE ::: Manual reload flag
 let shouldReload = false;
 
-/// HEADER ::: Declare class instance to use 
+/// VARIABLE ::: Declare class instance to use 
 let watcher = new Array();
+// This File tree variable is for checking 
+// if directory should be foled after reloading
 let prevFileTree = null;
 let fileTree = null;
 
-// VARAIBLE ::: Root direoctry given by user as a root for recursive file detection.
-// DEBUG ::: Testing
-//let rootDirectory = null;
 // VARAIBLE ::: Total list of gdml files's object 
 // {path : string, status: string}
 let totalGdmlList = new Array();
@@ -55,7 +54,7 @@ const SAVED ="SAVED";
 const UNSAVEDSYMBOL = "+";
 const NEWFILENAME = "new*.gdml";
 
-// VARAIBLE ::: COLOR value is based on tailwind-css class names
+// VARAIBLE ::: CSS class values are all based on tailwind-css class names
 const UNDEFINEDCOLOR = "bg-gray-600";
 const TEMPORARY = new Array("border-dashed");
 const HIGHLIGHT = new Array("border-b-2", "hover:opacity-80"); 
@@ -64,27 +63,21 @@ const OUTDATEDCOLOR = "bg-red-500";
 const UPTODATECOLOR = "bg-blue-500";
 const OUTDATEDTEXTCOLOR = "outdatedRed";
 const UPTODATETEXTCOLOR = "uptodateBlue";
-// BREAKABLE ::: This is really hard code and may breakble in later releases of toast ui editor.
-const FONTCLASSES= ".CodeMirror-lines, .tui-editor-contents";
 
 // VARAIBLE ::: Caching of specific dom elements.
 const tabMenu = document.querySelector("#openedTabs");
 const sideMenu = document.querySelector('#menuContents');
 const mainDiv = document.querySelector("#main");
-// const statusDiv = document.querySelector("#statusBar"); // This should be accessed from metaBar
-// const refDiv = document.querySelector("#references");
 const metaBar = document.querySelector("#metaBar");
 const editorScreen = document.querySelector("#editorScreen");
-
-// VARAIBLE ::: Config class
-// DEBUG ::: Chaning from class methods to exports
-//let config = new Config();
 
 // ----------------------------------------------------------------------------
 // INITIATION ::: Execute multiple initiation operation. 
 // Editorscreen should not be displayed but cloned and then set visible.
+// while metabar is ubiquotus
 metaBar.style.display = "none";
 editorScreen.style.display = "none";
+
 // Set electron menu and local shortcut for file navigations.
 const menu = new Menu()
 menu.append(new MenuItem({
@@ -113,10 +106,13 @@ menu.append(new MenuItem({
   ]
 }))
 Menu.setApplicationMenu(menu)
+
+// Given directory from current working directory.
+// This gets overridedn when user gives specific directory with --dir flag
 let givenDirectory = remote.process.cwd();
 // ----------------------------------------------------------------------------
 
-// VARAIBLE ::: Cli option related 
+// VARAIBLE ::: Cli option related variables and initialization
 cli.init(remote.process.argv);
 let dirOption = new CliOption("-d", "--dir", setRootDirectory, null);
 let argIndex = cli.getFlagArgIndex(dirOption); 
@@ -155,21 +151,9 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem, config.content["startMode"]);
 
 	var tabObject = newTabObject(false, SAVED, SAVED, true, path.join(shared.rootDirectory, NEWFILENAME), new Set(), gdml.newGdml(), metaElem, editorScreenElem, null, editorInstance);
-	// LEGACY :::  
-	//var tabObject = {
-		//contentStatus: SAVED, 
-		//refStatus: SAVED, 
-		//manualSave: true, 
-		//path: path.join(shared.rootDirectory, 'new.gdml'), 
-		//refs: new Set() ,
-		//content: gdml.newGdml(),
-		//meta: metaElem, 
-		//screen: editorScreenElem, 
-		//tab: null, 
-		//editor: editorInstance
-	//};
+
 	// IMPORTANT ::: push should be done before other tab related  
-	// becuase other operations assume that length has changed already.
+	// becuase other operations assume that length of tabObjects has changed already.
 	tabObjects.push(tabObject);
 
 	// If editor's content changes and content is different from original one
@@ -366,6 +350,9 @@ document.querySelector("#openDirBtn").addEventListener('click', () => {
 	});
 });
 
+// FUNCTION ::: Check if tab content is identical to
+// disk file's content. If not copy paste into it.
+// If editor content is unsaved, then create new document.
 function checkTabContents() {
 	tabObjects.forEach(item => {
 		if (item.path === NEWFILENAME) return;
@@ -564,6 +551,9 @@ function setRootDirectory(directory) {
 	); 
 }
 
+// FUNCTION ::: Watch file changes within given directory.
+// directory parameter is not used but indicates that which directory is
+// being watched obvious to programmer.
 function watchFileChange(directory, evt, name) {
 	// If changed file is gdml then reload the whole project
 	if (evt == 'update') {
@@ -586,6 +576,7 @@ function watchFileChange(directory, evt, name) {
 				}
 
 				// if node already exists dont read root directory
+				// but copy paste changed content into tabs.
 				if (result !== null && !shouldReload) {
 					checkTabContents();
 					return;
@@ -623,6 +614,7 @@ document.querySelector("#printBtn").addEventListener('click', () => {
     }, 1000);
 });
 
+// EVENT ::: Open config window
 document.querySelector("#configWindow").addEventListener('click', () => {
 	let configWindow = new ConfigWindow();
 })
@@ -725,8 +717,7 @@ function listFile(root, fileName, parentElement) {
 	fileTree.initNode(fullPath, elem);
 }
 
-
-// TODO :: Merge this into listDirectory
+// FUNCTION ::: Create directory menu button
 function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 	var divElem = document.createElement('div');
 	var dirElem = document.createElement('button');
@@ -741,8 +732,9 @@ function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 
 	fileTree.initNode(fullPath, divElem);
 
-	console.log("Listing directory of : " + fullPath);
+	//console.log("Listing directory of : " + fullPath);
 
+	// Add watcher element with directory
 	watcher.push(
 		watch(fullPath, (evt, name) => {
 			watchFileChange(fullPath, evt, name);
@@ -753,14 +745,16 @@ function listDirectory(root, dirName, parentElement, foldDirectory = false) {
 		if(err) {
 			console.log("Failed to read recursive files in directory");
 		} else {
-			console.log("Listing files in directory");
+			//console.log("Listing files in directory");
 			listMenuButtons(fullPath, files, divElem);
 
 			if (prevFileTree !== null) {
+				// If targetNode was already in previous file tree ... 
 				let targetNode = prevFileTree.getNode(fullPath);
-				console.log(JSON.parse(JSON.stringify(fileTree)));
-				console.log(targetNode);
+				//console.log(JSON.parse(JSON.stringify(fileTree)));
+				//console.log(targetNode);
 				// If targetNode is undefined then no such directory exists now.
+				// if targetNode was folded previously set to folded again.
 				if (foldDirectory || (targetNode !== null && targetNode.isFolded) ) {
 					// Set isFolded to false becuase dirElem.click() calls toggleChildren
 					// And toggleChildren toggle isFolded;
@@ -937,6 +931,7 @@ function loadGdmlToEditor(event) {
 	});
 }
 
+// FUNCTION ::: Pin tab and apply CSS classes.
 function pinTab(event) {
 	// Get event's tab Index
 	let tabIndex = Number(event.currentTarget.dataset.index);
@@ -1184,6 +1179,7 @@ function initEditor(newId, element, mode="wysiwyg") {
 	return editor;
 }
 
+// FUNCTION ::: Create element with given inner html text
 function elementWithInnerHtml(innerHtmlText) {
 	const button = document.createElement('button');
 	button.innerHTML = innerHtmlText;
@@ -1192,6 +1188,7 @@ function elementWithInnerHtml(innerHtmlText) {
 	return button;
 }
 
+// FUNCTION ::: Import template from template path directory.
 function importTemplate() {
 	if (currentTabIndex === -1) return;
 	let currentTabObject = tabObjects[currentTabIndex];
@@ -1211,6 +1208,7 @@ function importTemplate() {
 	} else {
 		targetPath = path.join(shared.rootDirectory, config.content["templatePath"]);
 	}
+
 	if (!fs.existsSync(targetPath)){
 		if (isAbsolute) {
 			alert("Template path doesn't exist.\nAbsolute path of template is not automatically generated.");
@@ -1232,6 +1230,7 @@ function importTemplate() {
 
 }
 
+// FUNCTION ::: Export template file as markdown format to template directory.
 function exportTemplate() {
 	if (currentTabIndex === -1) return;
 	let currentTabObject = tabObjects[currentTabIndex];
@@ -1280,7 +1279,6 @@ function statusGraphics(statusString) {
 	}
 }
 
-// TODO ::: MAke this work
 // FUNCTION ::: List references button to status bar
 function listReferences() {
 	// get list of referecnes from the tabObject 
@@ -1377,6 +1375,7 @@ function addRefBtn(fileName, listing) {
 	currentTabObject.meta.querySelector("#references").appendChild(divElem);
 }
 
+// FUNCTION ::: Create new tab object
 function newTabObject(temp, contentStatus, refStatus, manualSave, path, refs, content, meta, screen, tab, editor) {
 	return {
 		temp: temp,
@@ -1393,7 +1392,6 @@ function newTabObject(temp, contentStatus, refStatus, manualSave, path, refs, co
 	};
 }
 
-// TODO ::: Make this work
 // FUNCTION ::: Hide Current tab, which is called when another tab is clicked.
 function hideCurrentTab() {
 	// Hide screen and toggle color of tab Object
@@ -1463,6 +1461,9 @@ function setFontSize() {
 }`;
 }
 
+// TODO ::: Should check validation of gdml file
+// FUNCTION ::: Dragged markdown file or gdml file is 
+// pasted into currently bound text editor's content. 
 function dropToPasteFile(ev) {
 	console.log('File(s) dropped');
 

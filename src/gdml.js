@@ -11,6 +11,8 @@ module.exports = {
 			body: ""
 		}
 	},
+	// FUNCTION ::: Check if given file is valid gdml 
+	// or following gdml specification.
 	IsValidGdml : function(fullPath)  {
 		let result = null;
 		if (path.extname(fullPath) !== ".gdml") return false;
@@ -32,6 +34,7 @@ module.exports = {
 		});
 		return isValid;
 	},
+	// FUNCTION ::: Check if given string follows gdml specification.
 	IsValidGdmlString: function(content) {
 		let isValid = true;
 		if (content === null || content === undefined) {

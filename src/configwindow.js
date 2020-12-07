@@ -8,6 +8,7 @@ const config = require('./config');
 const shared = require('./shared');
 
 module.exports = {
+	// CLASS :: Simple browserwindow related class for creating new config window.
 	ConfigWindow : class ConfigWindow {
 		constructor() {
 			remote.getGlobal('shared').config = config;
@@ -38,7 +39,7 @@ module.exports = {
 				this.win = null;
 
 				// Write changed config to real config file.
-				// It is always overwriting even if there was no changes.
+				// It is always overwriting even if there were no changes.
 				fs.writeFileSync(
 					path.join(remote.getGlobal('shared').rootDirectory, "gesign_config.json"), 
 					JSON.stringify(remote.getGlobal('shared').config.content, null, 4)

@@ -5,6 +5,9 @@ const fs = require('fs');
 const DIRECTORY = "DIRECTORY";
 const FILE = "FILE";
 
+// CLASS :: File node that stores information of file
+// such as file types(e.g directory or gdml file)
+// or if directory is folded or not.
 class FileNode {
 	constructor(baseName, fileType, element) {
 		this.element = element;
@@ -16,18 +19,22 @@ class FileNode {
 }
 
 module.exports = {
+	// CLASS :: File Tree class that stores all gdml file and directory nodes read from working directory.
 	FileTree : class FileTree {
+		// CONSTRUCTOR :: initiate root node.
 		constructor(rootPath) {
 			this.rootDirectory = rootPath.split(path.sep);
 			this.rootNode = new FileNode(rootPath, true);
 		}
 
-		// Called on set root directory
+		// FUNCTION ::: Initiate node
+		// This function creates node if doesn't exist
+		// if given filepath doesn't match with root directory
+		// then ignore.
 		initNode(filePath, element) {
-			// TODO ::: Parse filPath into parsed list
+
 			// Follow path list and create if not found.
 			// Cache basename for loop end.
-			//let parsed = path.parse(filePath);
 			let parsed = filePath.split(path.sep);
 
 			for(let i= 0; i < this.rootDirectory.length; i++) {
@@ -49,6 +56,7 @@ module.exports = {
 			}
 		}
 
+		// FUNCTION ::: Literally remove node from tree
 		removeNode(filePath) {
 			let parsed = filePath.split(path.sep);
 
@@ -81,6 +89,7 @@ module.exports = {
 			parentNode.children.splice(parentNode.children.indexOf(currentNode), 1);
 		}
 
+		// FUNCTION ::: Literally get node from tree
 		// Return true if node was found.
 		getNode(filePath) {
 			let parsed = filePath.split(path.sep);
@@ -103,6 +112,7 @@ module.exports = {
 			return currentNode;
 		}
 
+		// FUNCTION ::: Check if parent node has child node which has given baseName
 		// Called on node-watch file change or remove
 		checkNode(nodeParent, baseName) {
 			let node = 
@@ -111,6 +121,7 @@ module.exports = {
 			return node;
 		}
 
+		// FUNCTION ::: Create new node
 		createNode(nodeParent, baseName, element) {
 			let fileType = FILE;
 			if (path.extname(baseName) === '') fileType = DIRECTORY;

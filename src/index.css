@@ -64,26 +64,26 @@ div#references::-webkit-scrollbar {
 	height: 0 !important;
 }
 
+/*This style enables nested file directory menu buton looks indented*/
 .directory > .fileButton {
 	margin-left: 1em;
 }
-
 .directory > div {
 	margin-left: 1em;
 }
 
+/*This is for displaying exclamation icon aside to file menu if it is outdated*/
 .uptodate ~ i {
 	display: none;
 }
-
 .outdated ~ i {
 	display: inline-block;
 }
 
+/*Color for status div and reference button to express current "status" */
 .outdatedRed {
 	color: #e0115f;
 }
-
 .uptodateBlue {
 	color: #4545cc;
 }

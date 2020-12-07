@@ -14,7 +14,6 @@ module.exports = {
 		if (this.content === "") return new Array();
 		return this.content["exclusion"];
 	},
-	// TODO ::: Make this get directory so that modification of config file name doesn't affect this logics.
 	// FUNCTION ::: Read config file from given path
 	readFromFile: function(filePath) {
 		// if given filePath is not same with name? ignore it if not json file then ignore

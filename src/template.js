@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = {
+	// FUNCTION ::: Get template with given name
 	GetTemplateContent(file) {
 		if (path.extname(file) !== ".md") return;
 
@@ -16,6 +17,8 @@ module.exports = {
 		}
 	},
 
+	// FUNCTION ::: Exort editor content into 
+	// markdown file with given name
 	ExportTemplate(content, file) {
 		if (path.extname(file) !== ".md") {
 			file += ".md";

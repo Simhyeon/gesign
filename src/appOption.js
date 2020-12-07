@@ -71,7 +71,7 @@ Options:
 			return new ProcessStatus(true, 0);
 		}
 
-		// FUNCTION ::: Check if gien file is valid gdml file in other words if necessary tags are all inside of the file.
+		// FUNCTION ::: Check if given file is valid gdml file in other words if necessary tags are all inside of the file.
 		checkValidation(fileName = null) {
 			if (fileName === null) {
 				console.log("Please give a file path to check validation");
@@ -209,8 +209,8 @@ Options:
 			return new ProcessStatus(true,0);
 		}
 
+		// List gdml files so that dependency is available.
 		listGdml(gdmlList, root, files) {
-			// Directory is shown first and files are shown later.
 			let dirsArray = files.filter(file => fs.lstatSync(path.join(root, file)).isDirectory());
 			let filesArray = files.filter(file => !fs.lstatSync(path.join(root, file)).isDirectory());
 
