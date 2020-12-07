@@ -25,6 +25,7 @@ function createWindow() {
 	// Config global variable reserved for ipc communication
 	global.shared = {
 		rootDirectory: null,
+		saveConfig: false,
 		config: null
 	};
 

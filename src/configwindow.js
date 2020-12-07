@@ -39,11 +39,15 @@ module.exports = {
 				this.win = null;
 
 				// Write changed config to real config file.
-				// It is always overwriting even if there were no changes.
+				// It is always overwriting only when there was changed.
+				// Change is detected according to the ipc signal 
+				// sent from config browserwindow
+				if (!remote.getGlobal('shared').saveConfig) return;
 				fs.writeFileSync(
 					path.join(remote.getGlobal('shared').rootDirectory, "gesign_config.json"), 
 					JSON.stringify(remote.getGlobal('shared').config.content, null, 4)
 				)
+				remote.getGlobal('shared').saveConfig = false;
 			})
 
 			this.win.once('ready-to-show', () => {

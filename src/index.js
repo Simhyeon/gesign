@@ -616,6 +616,7 @@ document.querySelector("#printBtn").addEventListener('click', () => {
 
 // EVENT ::: Open config window
 document.querySelector("#configWindow").addEventListener('click', () => {
+	if (shared.rootDirectory == null) return;
 	let configWindow = new ConfigWindow();
 })
 

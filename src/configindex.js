@@ -59,6 +59,7 @@ saveBtn.addEventListener('click', () => {
 	remote.getGlobal('shared').config.content.fontSize = 
 		document.querySelector('input[name="fontSize"]:checked').value;
 	remote.getGlobal('shared').config.content.unpinAuto = unpinAuto.checked;
+	remote.getGlobal('shared').saveConfig = true;
 
 	remote.getCurrentWindow().close();
 });
