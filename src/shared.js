@@ -2,5 +2,7 @@
 // which needs to be references by multiple files.
 
 module.exports = {
-	rootDirectory : null
+	rootDirectory : null,
+	/// Manual reload flag
+	shouldReload : false
 }

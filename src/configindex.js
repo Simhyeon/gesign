@@ -28,7 +28,13 @@ saveBtn.addEventListener('click', () => {
 	// while exclusion rules are optional and don't have to valid.
 	let templatePath = null;
 	try {
-		if (fs.existsSync(templatePathElem.innerHTML) || templatePathElem.innerHTML.textContent === "") {
+
+		let htmlValue = templatePathElem.innerHTML;
+		if (htmlValue !== "" && !path.isAbsolute(htmlValue)) {
+			htmlValue = path.join(rootDirectory, htmlValue);
+		}
+
+		if (fs.existsSync(htmlValue) || templatePathElem.innerHTML.textContent === "") {
 			templatePath = templatePathElem.innerHTML;
 		} else {
 			alert("Template path doesn't exist.");
@@ -39,6 +45,12 @@ saveBtn.addEventListener('click', () => {
 		alert("Template path doesn't exist. Err : " + err);
 		return;
 	}
+
+	let exElems = exclusionRoot.querySelectorAll(".excItem");
+	let exclusionlist = new Array();
+	exElems.forEach(item => {
+		exclusionlist.push(item.innerHTML);
+	});
 
 	remote.getGlobal('shared').config.content.templatePath = templatePath;
 	remote.getGlobal('shared').config.content.exclusion = exclusionlist;

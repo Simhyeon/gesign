@@ -23,9 +23,6 @@ const {ConfigWindow} = require('./configwindow');
 // VARIABLE ::: variable reserved for dragging
 let dragged = null;
 
-/// VARIABLE ::: Manual reload flag
-let shouldReload = false;
-
 /// VARIABLE ::: Declare class instance to use 
 let watcher = new Array();
 // This File tree variable is for checking 
@@ -147,6 +144,8 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	metaElem.style.display = "";
 	editorScreenElem.style.display = "";
 
+	editorScreenElem.addEventListener('drop', dropToPasteFile);
+
 	currentTabIndex = tabObjects.length;
 	let editorInstance = initEditor("Editor_" + currentTabIndex, editorScreenElem, config.content["startMode"]);
 
@@ -193,7 +192,7 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 	// If tabcache has been saved
 	if (tabCache !== -1) {
 		closeTab(tabObjects[tabCache].path);
-		console.log(JSON.parse(JSON.stringify(tabObjects.length)));
+		//console.log(JSON.parse(JSON.stringify(tabObjects.length)));
 	}
 });
 
@@ -255,7 +254,7 @@ function checkerButton() {
 		return 0;
 	});
 
-	console.log(totalGdmlList.length === checkerList.length);
+	//console.log(totalGdmlList.length === checkerList.length);
 
 	// TODO ::: Should change statuses of menu buttons 
 	// In first sight it should be ok becuase fs filewatch will detect status change and will
@@ -269,7 +268,7 @@ function checkerButton() {
 			let readFile = yaml.load(fs.readFileSync(totalGdmlList[j].path), 'utf8');
 			readFile["status"] = checkerList[j].status;
 			fs.writeFileSync(totalGdmlList[j].path, yaml.safeDump(readFile), 'utf8');
-			shouldReload = true;
+			shared.shouldReload = true;
 
 			if (currentTabIndex !== -1 && 
 				totalGdmlList[j].path === tabObjects[currentTabIndex].path) {
@@ -558,6 +557,10 @@ function watchFileChange(directory, evt, name) {
 	// If changed file is gdml then reload the whole project
 	if (evt == 'update') {
 		console.log("Detected file change of : " + name);
+		if (name === path.join(shared.rootDirectory, config.CONFIGFILENAME)) {
+			config.init(name);
+			setRootDirectory(shared.rootDirectory);
+		}
 		let extName = path.extname(name).toLowerCase();
 		if (extName === ".gdml" || extName === "") {
 			// If setting directory is not the first time
@@ -577,19 +580,16 @@ function watchFileChange(directory, evt, name) {
 
 				// if node already exists dont read root directory
 				// but copy paste changed content into tabs.
-				if (result !== null && !shouldReload) {
+				if (result !== null && !shared.shouldReload) {
 					checkTabContents();
 					return;
 				} 
 			}
 
-
 			// Reset variable.
-			if (shouldReload) shouldReload = false;
+			if (shared.shouldReload) shared.shouldReload = false;
 			// if file or directory has changed then reload root directory.
 			setRootDirectory(shared.rootDirectory);
-		} else if (name === path.join(shared.rootDirectory, config.CONFIGFILENAME)) {
-			config.init(name);
 		}
 	} 
 }
@@ -1283,6 +1283,11 @@ function statusGraphics(statusString) {
 function listReferences() {
 	// get list of referecnes from the tabObject 
 	let references = tabObjects[currentTabIndex].content["reference"]; // This is array
+	for( let i =0; i < references.length; i++ ) {
+		if (!path.isAbsolute(references[i])) {
+			references[i] = path.join(shared.rootDirectory, references[i]);
+		}
+	}
 	tabObjects[currentTabIndex].refs = new Set(references); // TODO ::: THis might be buggy
 
 	references.forEach((ref) => {
@@ -1295,23 +1300,28 @@ function listReferences() {
 function addRefBtn(fileName, listing) {
 	let currentTabObject = tabObjects[currentTabIndex];
 
-	// If listing is not true then it is adding what is not read from file
-	// Mostly from drag and drop addition.
-	if (!listing) {
-		// if reference already exists then ignore.
-		if (currentTabObject.refs.has(fileName)) return;
-		// make unsaved
-		currentTabObject.refStatus = UNSAVED;
-		currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
-		currentTabObject.refs.add(fileName);
-	}
+	// If referencing file is same with currentTab then return.
+	// it will cause 100% problem.
+	if (currentTabObject.path === fileName) return;
 
-	let divElem = document.createElement('div');
-	var elem = document.createElement('button');
 	let filePath = fileName;
 	if (!path.isAbsolute(filePath)) {
 		filePath = path.join(shared.rootDirectory, filePath);
 	}
+
+	// If listing is not true then it is adding what is not read from file
+	// Mostly from drag and drop addition.
+	if (!listing) {
+		// if reference already exists then ignore.
+		if (currentTabObject.refs.has(filePath)) return;
+		// make unsaved
+		currentTabObject.refStatus = UNSAVED;
+		currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
+		currentTabObject.refs.add(filePath);
+	}
+
+	let divElem = document.createElement('div');
+	var elem = document.createElement('button');
 
 	// This might yield error ecause filePath is not possiblye valid yml file.
 	let fileYaml;
@@ -1465,8 +1475,6 @@ function setFontSize() {
 // FUNCTION ::: Dragged markdown file or gdml file is 
 // pasted into currently bound text editor's content. 
 function dropToPasteFile(ev) {
-	console.log('File(s) dropped');
-
 	// Prevent default behavior (Prevent file from being opened)
 	ev.preventDefault();
 
@@ -1478,6 +1486,13 @@ function dropToPasteFile(ev) {
 				file.text().then(item => {
 					let currentTabObject = tabObjects[currentTabIndex];
 					let content = yaml.safeLoad(item);
+
+					// If not valid then return
+					if (!gdml.IsValidGdmlString(content)) {
+						alert("Invalid gdml file.")
+						return;
+					}
+
 					currentTabObject.editor.setMarkdown(content.body);
 					currentTabObject.contentStatus = UNSAVED;
 					currentTabObject.tab.textContent = path.basename(currentTabObject.path) + UNSAVEDSYMBOL;
