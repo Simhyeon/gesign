@@ -87,3 +87,11 @@ div#references::-webkit-scrollbar {
 .uptodateBlue {
 	color: #4545cc;
 }
+
+.sideVis {
+	min-width: 220px;
+}
+
+.sideInvis {
+	display: none;
+}

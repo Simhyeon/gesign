@@ -60,6 +60,8 @@ const OUTDATEDCOLOR = "bg-red-500";
 const UPTODATECOLOR = "bg-blue-500";
 const OUTDATEDTEXTCOLOR = "outdatedRed";
 const UPTODATETEXTCOLOR = "uptodateBlue";
+const SIDEVISIBLE = "sideVis"
+const SIDEINVISIBLE = "sideInvis"
 
 // VARAIBLE ::: Caching of specific dom elements.
 const tabMenu = document.querySelector("#openedTabs");
@@ -80,6 +82,10 @@ const menu = new Menu()
 menu.append(new MenuItem({
   label: 'Menu',
   submenu: [{
+    label: 'Hide sidenav',
+    accelerator: process.platform === 'darwin' ? 'Cmd+Shift+H' : 'Control+Shift+H',
+    click: () => { document.querySelector("#toggleSideBar").click(); }
+  },{
     label: 'Open Directory',
     accelerator: process.platform === 'darwin' ? 'Cmd+Shift+O' : 'Control+Shift+O',
     click: () => { document.querySelector("#openDirBtn").click(); }
@@ -337,6 +343,16 @@ function saveFile() {
 	if (config.content["checkOnSave"]) checkerButton();
 }
 
+document.querySelector("#toggleSideBar").addEventListener('click', () => {
+	if (sideMenu.classList.contains(SIDEINVISIBLE)) {
+		sideMenu.classList.remove(SIDEINVISIBLE);
+		sideMenu.classList.add(SIDEVISIBLE);
+	} else {
+		sideMenu.classList.add(SIDEINVISIBLE);
+		sideMenu.classList.remove(SIDEVISIBLE);
+	}
+}, false);
+
 // EVENT ::: Open Dialog and set shared.rootDirectory
 document.querySelector("#openDirBtn").addEventListener('click', () => {
 	let newDirectory = shared.rootDirectory;
@@ -347,7 +363,7 @@ document.querySelector("#openDirBtn").addEventListener('click', () => {
 			setRootDirectory(response.filePaths[0]);
 		}
 	});
-});
+}, false);
 
 // FUNCTION ::: Check if tab content is identical to
 // disk file's content. If not copy paste into it.

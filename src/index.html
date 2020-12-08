@@ -16,17 +16,18 @@
 	<body>
 		<div id="helpText" style="top: 50%; left: 40%; font-size: 20px; position: fixed; z-index: 10; color: gray">Open directory to start editing gdml files</div>
 		<div id="screen" class="flex w-full h-full">
-			<div id="sideNav" class="sidenav flex flex-col bg-gray-600 border-r-2 border-gray-400 border-opacity-10">
-				<div id="appMenu" class="appmenu flex flex-col w-full">
-					<div id="fileOps" class="flex border-b-2 border-gray-400 border-opacity-10">
-						<button id="saveFileBtn" class="py-1 px-2 mx-2 tooltip hover:opacity-50"><span class="tooltiptext">Save File</span><i class="far fa-save text-gray-300"></i></button>
-						<button id="openDirBtn" class="py-1 px-2 mx-2 tooltip hover:opacity-50"><span class="tooltiptext">Open root directory</span><i class="far fa-folder-open text-gray-300"></i></button>
-						<button id="checker" class="py-1 px-2 mx-2 tooltip hover:opacity-50"><span class="tooltiptext">Check depdencies</span><i class="far fa-check-square text-gray-300"></i></button>
-						<button id="printBtn" class="py-1 px-2 mx-2 tooltip hover:opacity-50"><span class="tooltiptext">Print File</span><i class="fas fa-print text-gray-300"></i></button>
-						<button id="configWindow" class="py-1 px-2 mx-2 tooltip hover:opacity-50"><span class="tooltiptext">Config Window</span><i class="fas fa-cog text-gray-300"></i></button>
+			<div id="sideNav" class="sidenav flex bg-gray-600 border-opacity-10">
+				<div id="appMenu" class="appmenu flex flex-col w-full border-r-2 border-gray-500">
+					<div id="fileOps" class="flex flex-col py-2">
+						<button id="toggleSideBar" class="py-1 px-2 m-1 tooltip hover:opacity-50"><span class="tooltiptext">Save File</span><i class="fas fa-bars text-gray-300"></i></button>
+						<button id="saveFileBtn" class="py-1 px-2 m-1 tooltip hover:opacity-50"><span class="tooltiptext">Save File</span><i class="far fa-save text-gray-300"></i></button>
+						<button id="openDirBtn" class="py-1 px-2 m-1 tooltip hover:opacity-50"><span class="tooltiptext">Open root directory</span><i class="far fa-folder-open text-gray-300"></i></button>
+						<button id="checker" class="py-1 px-2 m-1 tooltip hover:opacity-50"><span class="tooltiptext">Check depdencies</span><i class="far fa-check-square text-gray-300"></i></button>
+						<button id="printBtn" class="py-1 px-2 m-1 tooltip hover:opacity-50"><span class="tooltiptext">Print File</span><i class="fas fa-print text-gray-300"></i></button>
+						<button id="configWindow" class="py-1 px-2 m-1 tooltip hover:opacity-50"><span class="tooltiptext">Config Window</span><i class="fas fa-cog text-gray-300"></i></button>
 					</div>
 				</div>
-				<div id="menuContents" class="flex flex-col overflow-y-auto overflow-x-hidden">
+				<div id="menuContents" class="flex flex-col overflow-y-auto overflow-x-hidden border-r-2 border-gray-500 sideVis">
 
 				</div>
 			</div>

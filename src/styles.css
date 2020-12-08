@@ -589,6 +589,11 @@ video {
   border-color: rgba(156, 163, 175, var(--tw-border-opacity));
 }
 
+.border-gray-500 {
+  --tw-border-opacity: 1;
+  border-color: rgba(107, 114, 128, var(--tw-border-opacity));
+}
+
 .border-opacity-10 {
   --tw-border-opacity: 0.1;
 }
@@ -1063,6 +1068,8 @@ div#references::-webkit-scrollbar {
   height: 0 !important;
 }
 
+/*This style enables nested file directory menu buton looks indented*/
+
 .directory > .fileButton {
   margin-left: 1em;
 }
@@ -1070,6 +1077,8 @@ div#references::-webkit-scrollbar {
 .directory > div {
   margin-left: 1em;
 }
+
+/*This is for displaying exclamation icon aside to file menu if it is outdated*/
 
 .uptodate ~ i {
   display: none;
@@ -1079,12 +1088,22 @@ div#references::-webkit-scrollbar {
   display: inline-block;
 }
 
+/*Color for status div and reference button to express current "status" */
+
 .outdatedRed {
   color: #e0115f;
 }
 
 .uptodateBlue {
   color: #4545cc;
+}
+
+.sideVis {
+  min-width: 220px;
+}
+
+.sideInvis {
+  display: none;
 }
 
 @media (min-width: 640px) {
