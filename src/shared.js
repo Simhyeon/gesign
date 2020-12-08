@@ -4,5 +4,6 @@
 module.exports = {
 	rootDirectory : null,
 	/// Manual reload flag
-	shouldReload : false
+	shouldReload : false,
+	noconfig: false,
 }

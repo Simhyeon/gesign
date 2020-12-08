@@ -1,4 +1,5 @@
 const fs = require("fs");
+const shared = require('./shared');
 //const self = module.exports;
 
 module.exports = {
@@ -24,6 +25,12 @@ module.exports = {
 			console.log("Failed to read file or file doesn't exist. Error content : " + error);
 			// Set config to Default
 			this.content = this.default();
+			let userInput = confirm("No config file found create new one?");
+			if (userInput) {
+				fs.writeFileSync(filePath, this.content);
+			} else {
+				shared.noconfig = true;
+			}
 		}
 	},
 	// FUNCTION ::: Return default config object
