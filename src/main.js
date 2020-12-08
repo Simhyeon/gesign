@@ -55,8 +55,6 @@ function createWindow() {
 		// Dev console window.
 		win.webContents.openDevTools();
 	}
-		win.webContents.openDevTools();
-
 
 	win.on('closed', () => {
 		win = null;
