@@ -6,4 +6,5 @@ module.exports = {
 	/// Manual reload flag
 	shouldReload : false,
 	noconfig: false,
+	currentDirBtn: null,
 }

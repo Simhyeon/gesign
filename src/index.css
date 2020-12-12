@@ -12,13 +12,6 @@ html, body {
 
 @tailwind utilities;
 
-.blankButton {
-	@apply text-gray-800 font-semibold py-1 px-2 border border-gray-400 rounded shadow;
-}
-/*.blankButton:hover {*/
-	/*@apply bg-gray-200;*/
-/*}*/
-
 button:focus {
 	@apply outline-none;
 }
@@ -35,7 +28,7 @@ button:focus {
   visibility: hidden;
   width: 120px;
   @apply bg-white;
-  @apply text-gray-700;
+  @apply text-black;
   text-align: center;
   padding: 5px 0;
   border-radius: 6px;
@@ -50,16 +43,21 @@ button:focus {
 }
 
 /* Show the tooltip text when you mouse over the tooltip container */
+/* Currently Disabled */
 .tooltip:hover .tooltiptext {
-  transition-delay: 1s;
-  visibility: visible;
-  opacity: 1;
+  /*transition-delay: 1s;*/
+  /*visibility: visible;*/
+  /*opacity: 1 !important;*/
 }
 
 /*This disables height of scrollbar while scrolling possible*/
 /*However this is only possible in webkit based browser, namely chrome and safari*/
 /*This is fine because electron is chrome based*/
 div#references::-webkit-scrollbar {
+	width: 0 !important;
+	height: 0 !important;
+}
+div.tempButton::-webkit-scrollbar {
 	width: 0 !important;
 	height: 0 !important;
 }
@@ -89,9 +87,15 @@ div#references::-webkit-scrollbar {
 }
 
 .sideVis {
-	min-width: 220px;
 }
 
 .sideInvis {
 	display: none;
+}
+
+/* Disable orange outlines */
+* {
+	-webkit-tap-highlight-color: rgba(255, 255, 255, 0) !important; 
+	-webkit-focus-ring-color: rgba(255, 255, 255, 0) !important; 
+	outline: none !important;
 }

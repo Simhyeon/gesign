@@ -18,9 +18,9 @@
 		<div id="backgroundImage" style="top: 35%; left: 45%; position: fixed; z-index: -1; width: 350px; opacity: 5%;"><img src="../img/icon.png" alt=""></div>
 		<div id="screen" class="flex w-full h-full">
 			<div id="sideNav" class="sidenav flex bg-gray-600 border-opacity-10">
-				<div id="appMenu" class="appmenu flex flex-col w-full border-r-2 border-gray-500">
+				<div id="appMenu" class="appmenu flex flex-col border-r-2 border-gray-500">
 					<div id="fileOps" class="flex flex-col py-2">
-						<button id="toggleSideBar" class="py-1 px-2 m-1 tooltip hover:opacity-50"><span class="tooltiptext">Save File</span><i class="fas fa-bars text-gray-300"></i></button>
+						<button id="toggleSideBar" class="py-1 px-2 m-1 tooltip hover:opacity-50"><span class="tooltiptext">Toggle Side Bar</span><i class="fas fa-bars text-gray-300"></i></button>
 						<button id="saveFileBtn" class="py-1 px-2 m-1 tooltip hover:opacity-50"><span class="tooltiptext">Save File</span><i class="far fa-save text-gray-300"></i></button>
 						<button id="openDirBtn" class="py-1 px-2 m-1 tooltip hover:opacity-50"><span class="tooltiptext">Open root directory</span><i class="far fa-folder-open text-gray-300"></i></button>
 						<button id="checker" class="py-1 px-2 m-1 tooltip hover:opacity-50"><span class="tooltiptext">Check depdencies</span><i class="far fa-check-square text-gray-300"></i></button>
@@ -28,8 +28,11 @@
 						<button id="configWindow" class="py-1 px-2 m-1 tooltip hover:opacity-50"><span class="tooltiptext">Config Window</span><i class="fas fa-cog text-gray-300"></i></button>
 					</div>
 				</div>
-				<div id="menuContents" class="flex flex-col overflow-y-auto overflow-x-hidden border-r-2 border-gray-500 sideVis">
-
+				<div id="menuContents" class="flex flex-col overflow-y-auto overflow-x-hidden border-r-2 border-gray-500 sideVis" style="width: 220px;">
+					<div class="ioBtns justify-end flex border-b-2 border-gray-500 text-gray-300" style="height: 3%; min-height: 33px;">
+						<button id="newFile" class="mr-4 py-1 px-2 hover:opacity-50"><i class="far fa-plus-square"></i></button>
+						<button id="newDir" class="mr-4 py-1 px-2 hover:opacity-50"><i class="fas fa-folder-plus"></i></button>
+					</div>
 				</div>
 			</div>
 			<div id="main" class="flex flex-col h-full w-full" >

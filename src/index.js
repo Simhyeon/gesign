@@ -126,6 +126,24 @@ if (argIndex !== null) {
 // Execute render window related cli options' corresponding functions(closure).
 cli.execFlagAction(dirOption);
 
+document.querySelector("#newFile").addEventListener('mousedown', () => {
+	if (document.activeElement !== null && shared.currentDirBtn == document.activeElement) {
+		// Create new thing under currentDirBtn;
+		tempFileBtn(shared.currentDirBtn, true);
+	} else {
+		tempFileBtn(sideMenu, true);
+	}
+}, false);
+
+document.querySelector("#newDir").addEventListener('mousedown', () => {
+	if (document.activeElement !== null && shared.currentDirBtn == document.activeElement) {
+		// Create new thing under currentDirBtn;
+		tempFileBtn(shared.currentDirBtn, false);
+	} else {
+		tempFileBtn(sideMenu, false);
+	}
+}, false);
+
 // EVENT ::: Add new Document to tab
 document.querySelector("#addNewDocument").addEventListener('click', () => {
 
@@ -438,18 +456,26 @@ function setRootDirectory(directory) {
 		setFontSize();
 
 		// Remove children of sideMenu
-		while(sideMenu.firstChild) {
-			sideMenu.removeChild(sideMenu.firstChild);
+		let currentChild = sideMenu.firstElementChild;
+		console.log(currentChild);
+		while(currentChild) {
+			console.log("Removing");
+			let nextChild = currentChild.nextElementSibling;
+			if(!currentChild.classList.contains("ioBtns")) {
+				sideMenu.removeChild(currentChild);
+			}
+			currentChild = nextChild;
 		}
 
 		// Make root directory buttonish div
-		var divElem = document.createElement('div');
-		var dirElem = document.createElement('div');
-		divElem.classList.add("flex", "flex-col");
-		dirElem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "my-1", "w-full", 'select-none');
-		dirElem.textContent = "<" + path.basename(directory) + ">";
-		sideMenu.appendChild(divElem);
-		divElem.appendChild(dirElem);
+		let rootDirElem = document.createElement('button');
+		rootDirElem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", UNDEFINEDCOLOR, "my-1", "w-full", "hover:opacity-50", "focus:opacity-50");
+		rootDirElem.textContent = "<" + path.basename(directory) + ">";
+		sideMenu.appendChild(rootDirElem);
+		rootDirElem.dataset.path = directory;
+		rootDirElem.addEventListener('click', (e) => {
+			shared.currentDirBtn = e.currentTarget;
+		});
 
 
 		// Set variable that decided whether fold or not.
@@ -597,6 +623,7 @@ function watchFileChange(directory, evt, name) {
 				// if node already exists dont read root directory
 				// but copy paste changed content into tabs.
 				if (result !== null && !shared.shouldReload) {
+					console.log("Don't read full directory");
 					checkTabContents();
 					return;
 				} 
@@ -605,9 +632,64 @@ function watchFileChange(directory, evt, name) {
 			// Reset variable.
 			if (shared.shouldReload) shared.shouldReload = false;
 			// if file or directory has changed then reload root directory.
+			console.log("Reading whole directory from start");
 			setRootDirectory(shared.rootDirectory);
 		}
 	} 
+}
+
+// rootParent should have dataset.path set as real directory
+function tempFileBtn(rootParent, isFile) {
+	let dirElem = document.createElement('div');
+	dirElem.classList.add("tempButton", "font-bold", "text-left", "py-2", "px-4", "text-gray-200", UNDEFINEDCOLOR, "mb-1", "border-2", "border-gray-200", "overflow-x-scroll", "whitespace-nowrap", "min-w-0", "items-start");
+	dirElem.contentEditable = true;
+	dirElem.dataset.rootPath = rootParent.dataset.path;
+
+	// IMPORTANT ::: This is due to somewhat unefficient html hierarchy
+	// curently rootdirectory is under sidemenu and all root located files
+	// are all under sideMenu
+	if (rootParent.dataset.path === shared.rootDirectory || rootParent === sideMenu) {
+		rootParent = sideMenu;
+		dirElem.dataset.rootPath = shared.rootDirectory;
+	}
+
+	dirElem.addEventListener('blur', (e) => {
+		e.preventDefault();
+		e.currentTarget.remove();
+	}, false);
+
+	dirElem.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			if (e.currentTarget.textContent === "") {e.currentTarget.remove(); return;}
+			let fullPath = path.join(e.currentTarget.dataset.rootPath, e.currentTarget.textContent);
+			if (fs.existsSync(fullPath)) {e.currentTarget.remove(); return;}
+			else {
+				// You can create file or directory
+				// TODO ::: Should create file or directory first.
+				if (isFile) {
+					fs.writeFileSync(fullPath + ".gdml", yaml.safeDump(gdml.newGdml()));
+					listFile(e.currentTarget.dataset.rootPath, e.currentTarget.textContent + ".gdml", rootParent);
+				} else {
+					fs.mkdirSync(fullPath);
+					listDirectory(e.currentTarget.dataset.rootPath, e.currentTarget.textContent, rootParent)
+				}
+				document.activeElement.blur();
+				shared.shouldReload = true;
+			}
+		} else if (e.key === "Escape") {
+			e.preventDefault();
+			document.activeElement.blur()
+		}
+	}, false);
+
+	rootParent.appendChild(dirElem);
+
+	// IMPORTANT ::: This enables focusing on contenteditable div.
+	// Focusing without timeout doesn't work as expected.
+	setTimeout(() => {
+		dirElem.focus();
+	}, 0);
 }
 
 // SOURCE ::: https://stackoverflow.com/questions/12997123/print-specific-part-of-webpage/#answer-12997207
@@ -703,9 +785,6 @@ function listFile(root, fileName, parentElement) {
 	// If filename is too long then cut it
 	fileName = path.basename(fileName, '.gdml')
 
-	if (fileName.length > 15) {
-		fileName = fileName.slice(0, 15) + "...";
-	}
 
 	elem.textContent = fileName;
 	elem.dataset.path = fullPath;
@@ -720,7 +799,9 @@ function listFile(root, fileName, parentElement) {
 
 	//elem.classList.add("font-bold", "text-left", "py-2", "px-4", "text-white", menuColor, "fileButton", "mb-1", "w-full");
 	divElem.classList.add("flex", "items-center");
-	elem.classList.add("font-bold", "text-left", "py-2", "pl-4", "text-gray-200", "fileButton", "mb-1", "w-full", "inline", "hover:opacity-50", buttonStatus);
+	elem.classList.add("font-bold", "text-left", "py-2", "pl-4", "text-gray-200", "fileButton", "mb-1", "w-full", "inline", "hover:opacity-50", buttonStatus, "min-w-0", "overflow-ellipsis", "overflow-x-hidden", "whitespace-nowrap");
+	elem.style = "flex-basis: 90%;";
+
 	indElem.classList.add("fas", "fa-exclamation-triangle", "text-gray-300", "mr-2");
 
 	elem.draggable = true;
@@ -736,14 +817,16 @@ function listFile(root, fileName, parentElement) {
 
 // FUNCTION ::: Create directory menu button
 function listDirectory(root, dirName, parentElement, foldDirectory = false) {
-	var divElem = document.createElement('div');
-	var dirElem = document.createElement('button');
+	let divElem = document.createElement('div');
+	let dirElem = document.createElement('button');
 	divElem.classList.add("directory", "flex", "flex-col");
-	dirElem.classList.add("dirButton","font-bold", "text-left", "py-2", "px-4", "text-gray-200", UNDEFINEDCOLOR, "mb-1", "w-full", "hover:opacity-50");
+	dirElem.classList.add("dirButton","font-bold", "text-left", "py-2", "px-4", "text-gray-200", UNDEFINEDCOLOR, "mb-1", "w-full", "hover:opacity-50", "focus:opacity-50", "min-w-0", "overflow-ellipsis" , "overflow-x-hidden", "whitespace-nowrap");
+	dirElem.style = "flex-basis: 100%"
 	let fullPath = path.join(root, dirName);
 	dirElem.textContent = "> " + dirName;
 	dirElem.dataset.path = fullPath;
 	dirElem.addEventListener('click', toggleChildren);
+	dirElem.addEventListener('focus', (e) => shared.currentDirBtn = e.currentTarget);
 	parentElement.appendChild(divElem);
 	divElem.appendChild(dirElem);
 
@@ -1010,7 +1093,7 @@ function addNewTab(filePath) {
 			//
 			// Get siblings of dragged and increase index by 1
 			// remove dragged from parent and add before target.
-			event.currentTarget.parentElement.insertBefore(dragged, event.currentTarget.nextSibling);
+			event.currentTarget.parentElement.insertBefore(dragged, event.currentTarget.nextElementSibling);
 		}
 
 	}, false);

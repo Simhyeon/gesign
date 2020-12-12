@@ -584,6 +584,11 @@ video {
   background-color: rgba(59, 130, 246, var(--tw-bg-opacity));
 }
 
+.border-gray-200 {
+  --tw-border-opacity: 1;
+  border-color: rgba(229, 231, 235, var(--tw-border-opacity));
+}
+
 .border-gray-400 {
   --tw-border-opacity: 1;
   border-color: rgba(156, 163, 175, var(--tw-border-opacity));
@@ -648,6 +653,10 @@ video {
 
 .flex-col {
   flex-direction: column;
+}
+
+.items-start {
+  align-items: flex-start;
 }
 
 .items-center {
@@ -763,6 +772,10 @@ video {
   margin-top: 6rem;
 }
 
+.min-w-0 {
+  min-width: 0px;
+}
+
 .opacity-50 {
   opacity: 0.5;
 }
@@ -791,6 +804,10 @@ video {
   opacity: 1;
 }
 
+.focus\:opacity-50:focus {
+  opacity: 0.5;
+}
+
 .overflow-x-auto {
   overflow-x: auto;
 }
@@ -801,6 +818,10 @@ video {
 
 .overflow-x-hidden {
   overflow-x: hidden;
+}
+
+.overflow-x-scroll {
+  overflow-x: scroll;
 }
 
 .p-1 {
@@ -892,15 +913,12 @@ video {
   color: rgba(75, 85, 99, var(--tw-text-opacity));
 }
 
-.italic {
-  font-style: italic;
+.overflow-ellipsis {
+  text-overflow: ellipsis;
 }
 
-.select-none {
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
+.italic {
+  font-style: italic;
 }
 
 .align-middle {
@@ -993,28 +1011,6 @@ video {
   }
 }
 
-.blankButton {
-  --tw-border-opacity: 1;
-  border-color: rgba(156, 163, 175, var(--tw-border-opacity));
-  border-radius: 0.25rem;
-  border-width: 1px;
-  font-weight: 600;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-  --tw-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-  --tw-text-opacity: 1;
-  color: rgba(31, 41, 55, var(--tw-text-opacity));
-}
-
-/*.blankButton:hover {*/
-
-/*@apply bg-gray-200;*/
-
-/*}*/
-
 button:focus {
   outline: 2px solid transparent;
   outline-offset: 2px;
@@ -1037,7 +1033,7 @@ button:focus {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
   --tw-text-opacity: 1;
-  color: rgba(55, 65, 81, var(--tw-text-opacity));
+  color: rgba(0, 0, 0, var(--tw-text-opacity));
   text-align: center;
   padding: 5px 0;
   border-radius: 6px;
@@ -1051,10 +1047,12 @@ button:focus {
 
 /* Show the tooltip text when you mouse over the tooltip container */
 
+/* Currently Disabled */
+
 .tooltip:hover .tooltiptext {
-  transition-delay: 1s;
-  visibility: visible;
-  opacity: 1;
+  /*transition-delay: 1s;*/
+  /*visibility: visible;*/
+  /*opacity: 1 !important;*/
 }
 
 /*This disables height of scrollbar while scrolling possible*/
@@ -1064,6 +1062,11 @@ button:focus {
 /*This is fine because electron is chrome based*/
 
 div#references::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+}
+
+div.tempButton::-webkit-scrollbar {
   width: 0 !important;
   height: 0 !important;
 }
@@ -1099,11 +1102,18 @@ div#references::-webkit-scrollbar {
 }
 
 .sideVis {
-  min-width: 220px;
 }
 
 .sideInvis {
   display: none;
+}
+
+/* Disable orange outlines */
+
+* {
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0) !important;
+  -webkit-focus-ring-color: rgba(255, 255, 255, 0) !important;
+  outline: none !important;
 }
 
 @media (min-width: 640px) {
