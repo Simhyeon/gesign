@@ -127,6 +127,7 @@ if (argIndex !== null) {
 cli.execFlagAction(dirOption);
 
 document.querySelector("#newFile").addEventListener('mousedown', () => {
+	if (shared.rootDirectory == null) return;
 	if (document.activeElement !== null && shared.currentDirBtn == document.activeElement) {
 		// Create new thing under currentDirBtn;
 		tempFileBtn(shared.currentDirBtn, true);
@@ -136,6 +137,7 @@ document.querySelector("#newFile").addEventListener('mousedown', () => {
 }, false);
 
 document.querySelector("#newDir").addEventListener('mousedown', () => {
+	if (shared.rootDirectory == null) return;
 	if (document.activeElement !== null && shared.currentDirBtn == document.activeElement) {
 		// Create new thing under currentDirBtn;
 		tempFileBtn(shared.currentDirBtn, false);
