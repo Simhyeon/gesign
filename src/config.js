@@ -27,7 +27,7 @@ module.exports = {
 			this.content = this.default();
 			let userInput = confirm("No config file found create new one?");
 			if (userInput) {
-				fs.writeFileSync(filePath, this.content);
+				fs.writeFileSync(filePath, JSON.stringify(this.content, null, 4));
 			} else {
 				shared.noconfig = true;
 			}
@@ -36,7 +36,8 @@ module.exports = {
 	// FUNCTION ::: Return default config object
 	default: function() {
 		return { 
-			exclusion: new Array(),
+			exclusion: ["templates"],
+			//exclusion: new Array(),
 			startMode: "wysiwyg",
 			fontSize: "small",
 			templatePath: "templates",
