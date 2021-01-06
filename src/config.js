@@ -1,4 +1,5 @@
 const fs = require("fs");
+const path = require('path');
 const shared = require('./shared');
 //const self = module.exports;
 
@@ -28,6 +29,7 @@ module.exports = {
 			let userInput = confirm("No config file found create new one?");
 			if (userInput) {
 				fs.writeFileSync(filePath, JSON.stringify(this.content, null, 4));
+				fs.mkdirSync(path.join(path.dirname(filePath), "templates"));
 			} else {
 				shared.noconfig = true;
 			}
