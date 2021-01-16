@@ -47,20 +47,20 @@ Making a desktop application is not an easy task. Furthermore making it cross-pl
 
 ## TODO 
 
-- [x] Fix bugs
-	- [x] Directory is not properly displayed as nested
 - [ ] Command line options e.g init, new file
 	- [x] Validation
 	- [x] Headless Reference Check
 	- [x] Init config file
 	- [x] Create new gdml file
 	- [ ] Show list of gdml files in root directory
-- [ ] Config file 
+- [x] Config file 
 	- [x] Exclusion rules
 	- [x] Font size
 	- [x] Start Mode
-	- [ ] Check dependencies on save
+	- [x] Check dependencies on save
 - [x] Editable config window
 - [x] Template Support
+- [ ] Resizable left panel
+- [ ] Search text in editor
 - [ ] Single executable file
 - [ ] Improve Aesthetics
