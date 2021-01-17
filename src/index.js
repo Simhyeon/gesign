@@ -64,6 +64,7 @@ const SIDEVISIBLE = "sideVis"
 const SIDEINVISIBLE = "sideInvis"
 
 // VARAIBLE ::: Caching of specific dom elements.
+const findMenu = document.querySelector("#find");
 const tabMenu = document.querySelector("#openedTabs");
 const sideMenu = document.querySelector('#menuContents');
 const mainDiv = document.querySelector("#main");
@@ -105,6 +106,10 @@ menu.append(new MenuItem({
     label: 'Toggle Mode',
     accelerator: process.platform === 'darwin' ? 'Cmd+Shift+M' : 'Control+Shift+M',
     click: () => { toggleMode() }
+  },{
+    label: 'Find',
+    accelerator: process.platform === 'darwin' ? 'Cmd+F' : 'Control+F',
+    click: () => { toggleFindMenu() }
   }
   ]
 }))
@@ -125,6 +130,10 @@ if (argIndex !== null) {
 
 // Execute render window related cli options' corresponding functions(closure).
 cli.execFlagAction(dirOption);
+
+document.querySelector("#findInput").addEventListener('mousedown', (event) => {
+	event.stopImmediatePropagation();
+});
 
 document.querySelector("#newFile").addEventListener('mousedown', () => {
 	if (shared.rootDirectory == null) return;
@@ -226,6 +235,62 @@ document.querySelector("#addNewDocument").addEventListener('click', () => {
 document.querySelector("#checker").addEventListener('click', () => {
 	checkerButton();
 });
+
+// EVENT ::: Both findPrev and findNext should have eventtype of mousedown
+// to prevent clicking button getting focus
+// if button gets focus then this logic doesn't work either.
+// => was the original idea however currently boundary check is not working
+// so it doesnt' matter for now
+document.querySelector("#findPrev").addEventListener('mousedown', (event) => {
+	if (currentTabIndex === -1) { return; }
+
+	// Second options is case sensitive 
+	// Third option is search backwards
+	let result = window.find(String(document.querySelector("#findInput").value), false, true);
+
+	event.preventDefault();
+	event.stopPropagation();
+}, false);
+
+document.querySelector("#findNext").addEventListener('mousedown', (event) => {
+	if (currentTabIndex === -1) { return; }
+
+	// Second options is case sensitive 
+	let result = window.find(String(document.querySelector("#findInput").value), false);
+
+	event.preventDefault();
+	event.stopPropagation();
+}, false);
+
+document.querySelector("#findClose").addEventListener('click', () => {
+	document.querySelector("#findInput").value = "";
+	findMenu.classList.add("invisible");
+}, false);
+
+// NOTINUSE
+// Currently this function is not used becuase I don't have much to time to grind.
+function isInBoundary() {
+	let focusNode = window.getSelection().focusNode;
+	// 1 node is element node
+	if (focusNode.nodeType === 1) {
+		if (focusNode.classList.contains("noFind")) {
+			return false;
+		} else {
+			return true;
+		}
+	} 
+	// 3 nodetype is text node
+	else if (focusNode.nodeType === 3) {
+		if (focusNode.parentElement.classList.contains("noFind")) {
+			return false;
+		} else {
+			return true;
+		}
+	} else {
+		return true;
+	}
+}
+
 
 // FUNCTION ::: Called by checkerButton event
 function checkerButton() {
@@ -1527,6 +1592,28 @@ function toggleMode() {
 	}
 }
 
+function toggleFindMenu(enforce = null) {
+	if (currentTabIndex === -1) {
+		return;
+	}
+
+	if (enforce !== null) {
+		if (enforce) {
+			findMenu.classList.remove("invisible");
+			tabObjects[currentTabIndex].editor.moveCursorToStart();
+		} else {
+			findMenu.classList.add("invisible");
+		}
+		return;
+	}
+
+	if (findMenu.classList.contains("invisible")) {
+		findMenu.classList.remove("invisible");
+		tabObjects[currentTabIndex].editor.moveCursorToStart();
+	} else {
+		findMenu.classList.add("invisible");
+	}
+}
 
 // REFERENCE :::  Font sizes of toast ui editor
 // default font size is 13px

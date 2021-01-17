@@ -14,6 +14,12 @@
 		</style>
 	</head>
 	<body>
+		<div id="find" style="z-index: 10; top: 50px; right: 30px;" class="invisible rounded-lg p-2 absolute bg-gray-300">
+			<input type="text" id="findInput" class="bg-transparent" placeholder="Find..."/>
+			<button id="findPrev" class="hover:opacity-50"><i class="fas fa-chevron-left"></i></button>
+			<button id="findNext" class="hover:opacity-50"><i class="fas fa-chevron-right"></i></button>
+			<button id="findClose" class="ml-2 hover:opacity-50"><i class="fas fa-times"></i></button>
+		</div>
 		<div id="helpText" style="top: 50%; left: 44.5%; font-size: 20px; position: fixed; z-index: 10; color: gray">Open directory to start editing gdml files</div>
 		<div id="backgroundImage" style="top: 35%; left: 45%; position: fixed; z-index: -1; width: 350px; opacity: 5%;"><img src="../img/icon.png" alt=""></div>
 		<div id="screen" class="flex w-full h-full">
