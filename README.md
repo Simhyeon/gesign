@@ -1,3 +1,10 @@
+# Gesign is deprecated
+
+Gesign will not be developed from deprecation.
+
+Refer [Rif](https://github.com/simhyeon/rif) if you want to use much more
+modular and adaptive file references checking functionality.
+
 # Gesign
 Game design document editor
 
